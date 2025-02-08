@@ -1,0 +1,17 @@
+begin program:
+
+begin VarDecl:
+    (num1, int);
+    (num2, int);
+    (sum, int);
+end VarDecl
+
+num1:=(20,10);
+num2:=(10,);
+
+// Perform addition
+sum := num1 + num2;
+
+// Display the result
+print("The sum = @ ", sum);
+end program
