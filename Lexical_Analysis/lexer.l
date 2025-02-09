@@ -129,6 +129,164 @@ void validateIntConstant(const char *text) {
     }
     printf("INTEGER_CONSTANT: %s\n", text);
 }
+
+/* Count occurrences of @ in a string */
+int countAtSymbols(const char *str) {
+    int count = 0;
+    char *ptr = strchr(str, '@');
+    while (ptr != NULL) {
+        count++;
+        ptr = strchr(ptr + 1, '@');
+    }
+    return count;
+}
+
+/* Count number of arguments (values after the format string) */
+int countArgs(const char *str) {
+    int count = 0;
+    const char *ptr = str;
+    int in_string = 0;
+    
+    // Skip until after the first string
+    while (*ptr) {
+        if (*ptr == '"') {
+            in_string = !in_string;
+            if (!in_string) {
+                ptr++;
+                break;
+            }
+        }
+        ptr++;
+    }
+    
+    // Count commas outside of strings and constants
+    int in_const = 0;
+    while (*ptr) {
+        if (*ptr == '(') in_const = 1;
+        else if (*ptr == ')') in_const = 0;
+        else if (*ptr == '"') in_string = !in_string;
+        else if (*ptr == ',' && !in_string && !in_const) count++;
+        ptr++;
+    }
+    
+    return count + 1;  // Add 1 because commas are one less than arguments
+}
+
+int validateIO(const char *text, int is_scan) {
+    // Check for semicolon at the end
+    size_t len = strlen(text);
+    if (text[len-1] != ';') {
+        printf("Lexical Error: Missing semicolon at end of %s statement\n", 
+               is_scan ? "scan" : "print");
+        return 0;
+    }
+    
+    // Find the first string
+    char *start_quote = strchr(text, '"');
+    char *end_quote = start_quote ? strchr(start_quote + 1, '"') : NULL;
+    
+    if (!start_quote || !end_quote) {
+        printf("Lexical Error: Invalid format string in %s statement\n",
+               is_scan ? "scan" : "print");
+        return 0;
+    }
+    
+    // Extract and check the format string
+    size_t format_len = end_quote - start_quote - 1;
+    char format_str[256] = {0};
+    strncpy(format_str, start_quote + 1, format_len);
+    
+    int at_count = countAtSymbols(format_str);
+    int arg_count = countArgs(text) - 1;  // -1 because first arg is format string
+    
+    if (at_count != arg_count) {
+        printf("Lexical Error: Number of @ symbols (%d) does not match number of arguments (%d) in %s statement\n",
+               at_count, arg_count, is_scan ? "scan" : "print");
+        return 0;
+    }
+    
+    if (is_scan) {
+        // For scan, all arguments must be identifiers
+        char *ptr = end_quote + 1;
+        while (*ptr) {
+            if (*ptr == '(' || *ptr == '\'' || *ptr == '"') {
+                printf("Lexical Error: scan statement can only take variables as arguments\n");
+                return 0;
+            }
+            ptr++;
+        }
+    }
+    
+    // If we get here, the statement is valid, so print the tokens
+    if (is_scan) {
+        printf("KEYWORD: scan\n");
+    } else {
+        printf("KEYWORD: print\n");
+    }
+    printf("SEPARATOR: (\n");
+    
+    // Print the string constant token
+    char string_const[256] = {0};
+    snprintf(string_const, sizeof(string_const), "%.*s", (int)(end_quote - start_quote + 1), start_quote);
+    printf("STRING_CONSTANT: %s\n", string_const);
+    
+    // Print tokens for each argument
+    char *ptr = end_quote + 1;
+    while (*ptr) {
+        // Skip whitespace
+        while (*ptr && (*ptr == ' ' || *ptr == '\t')) ptr++;
+        
+        if (*ptr == ',') {
+            printf("SEPARATOR: ,\n");
+            ptr++;
+            continue;
+        }
+        
+        if (*ptr == '(') {
+            // This is an integer constant
+            char *closing = strchr(ptr, ')');
+            if (closing) {
+                char const_str[256] = {0};
+                snprintf(const_str, sizeof(const_str), "%.*s", (int)(closing - ptr + 1), ptr);
+                printf("INTEGER_CONSTANT: %s\n", const_str);
+                ptr = closing + 1;
+                continue;
+            }
+        }
+        
+        if (*ptr == '\'') {
+            // This is a character constant
+            char *next_quote = strchr(ptr + 1, '\'');
+            if (next_quote) {
+                char char_const[256] = {0};
+                snprintf(char_const, sizeof(char_const), "%.*s", (int)(next_quote - ptr + 1), ptr);
+                printf("CHAR_CONSTANT: %s\n", char_const);
+                ptr = next_quote + 1;
+                continue;
+            }
+        }
+        
+        if (isalpha(*ptr)) {
+            // This is an identifier
+            char id[MAX_ID_LEN] = {0};
+            int i = 0;
+            while (*ptr && (isalnum(*ptr) || *ptr == '_') && i < MAX_ID_LEN - 1) {
+                id[i++] = *ptr++;
+            }
+            printf("IDENTIFIER: %s\n", id);
+            continue;
+        }
+        
+        ptr++;
+    }
+    
+    printf("SEPARATOR: )\n");
+    printf("SEPARATOR: ;\n");
+    
+    return 1;
+}
+
+
 %}
 
 %option noyywrap
@@ -136,13 +294,17 @@ void validateIntConstant(const char *text) {
 /* Regular Expression Definitions */
 DIGIT       [0-9]
 ID          [a-z]([a-z0-9]*_?[a-z0-9]*)?
-INTCONST    \([0-9]+[ \t]*,[ \t]*[0-9]+\)
+INTCONST    \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST   \'(\\.|[^\\\'])?\'
 STRINGCONST \"([^\"\\]|\\.)*\"
 WS          [ \t\n]+
 SLCOMMENT   "//".*\n
 MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
-VARDECL     \([a-z][a-z0-9]*(_[a-z0-9]+)?,[ \t]*(int|char)\)
+VARDECL     \([a-z][a-z0-9]*([_]+[a-z0-9]+)?,[ \t](int|char)\)
+
+PRINT_STMT  print[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
+SCAN_STMT   scan[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
+
 
 %%
 {WS}        ;  /* Skip whitespace */
@@ -165,15 +327,12 @@ VARDECL     \([a-z][a-z0-9]*(_[a-z0-9]+)?,[ \t]*(int|char)\)
         strncpy(type, comma + 1, typeLen);
         name[nameLen] = '\0';
         type[typeLen] = '\0';
-        /* Trim whitespace */
-        char *ptr = type;
-        while (*ptr == ' ' || *ptr == '\t') ptr++;
-        memmove(type, ptr, strlen(ptr) + 1);
-        ptr = type + strlen(type) - 1;
-        while (ptr > type && (*ptr == ' ' || *ptr == '\t')) *ptr-- = '\0';
+
         addSymbol(name, type);
     }
 }
+
+valid:
 
 "begin"     { printf("KEYWORD: %s\n", yytext); }
 "end"       { printf("KEYWORD: %s\n", yytext); }
@@ -234,6 +393,10 @@ VARDECL     \([a-z][a-z0-9]*(_[a-z0-9]+)?,[ \t]*(int|char)\)
         printf("IDENTIFIER: %s\n", yytext);
     }
 }
+
+{PRINT_STMT} { validateIO(yytext, 0); }
+{SCAN_STMT}  { validateIO(yytext, 1); }
+
 
 .           { printf("UNKNOWN TOKEN: %s\n", yytext); }
 

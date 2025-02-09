@@ -6,12 +6,14 @@ begin VarDecl:
     (sum, int);
 end VarDecl
 
-num1:=(20,10);
-num2:=(10,);
+num1:=(10, 2);
+num2:=(131, 10);
+
+scan("@, @, @", a, b, c);
 
 // Perform addition
 sum := num1 + num2;
 
 // Display the result
-print("The sum = @ ", sum);
+print("The values are @, @, and @: ", a, b, c);
 end program
