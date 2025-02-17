@@ -21,8 +21,8 @@ int inVarDecl = 0;   /* flag for variable declaration section */
 /* Check if a string is a keyword */
 int isKeyword(const char *str) {
     const char *keywords[] = {
-        "int", "float", "if", "else", "while", "for", "main",
-        "begin", "end", "input", "output", "program", "VarDecl", "inc", "dec"
+        "int", "char", "if", "else", "while", "for", "main",
+        "begin", "end", "print", "scan", "program", "VarDecl", "inc", "dec"
     };
     int numKeywords = sizeof(keywords) / sizeof(keywords[0]);
     for (int i = 0; i < numKeywords; i++) {
@@ -37,14 +37,14 @@ void addSymbol(const char *name, const char *type) {
     /* Check for duplicate definition */
     for (int i = 0; i < symbolCount; i++) {
         if (strcmp(symbols[i].name, name) == 0) {
-            printf("Lexical Error: Variable '%s' defined more than once\n", name);
+            printf("%-25s Error: Variable '%s' defined more than once\n", name, name);
             return;
         }
     }
     
     /* Check if keyword is used as variable */
     if (isKeyword(name)) {
-        printf("Lexical Error: Keyword '%s' cannot be used as a variable\n", name);
+        printf("%-25s Error: Keyword '%s' cannot be used as a variable\n", name, name);
         return;
     }
     
@@ -55,14 +55,20 @@ void addSymbol(const char *name, const char *type) {
             underscoreCount++;
     }
     if (underscoreCount > 1) {
-        printf("Lexical Error: Invalid variable name '%s' (more than one underscore)\n", name);
+        printf("%-25s Error: Invalid variable name '%s' (more than one underscore)\n", name, name);
         return;
     }
     
     strcpy(symbols[symbolCount].name, name);
     strcpy(symbols[symbolCount].type, type);
     symbolCount++;
-    printf("DECLARED VARIABLE: %s of type %s\n", name, type);
+    
+    printf("(                         Separator\n");
+    printf("%s                        Identifier\n", name);
+    printf(",                         Separator\n");
+    printf("%s                        Keyword\n", type);
+    printf(")                         Separator\n");
+
 }
 
 /* Check if variable is declared */
@@ -78,7 +84,7 @@ int isDeclared(const char *name) {
 void validateIntConstant(const char *text) {
     int len = strlen(text);
     if (len < 5) {
-        printf("Lexical Error: Invalid integer constant format '%s'\n", text);
+        printf("%-25s Error: Invalid integer constant format\n", text);
         return;
     }
     
@@ -88,7 +94,7 @@ void validateIntConstant(const char *text) {
     
     char *comma = strchr(inner, ',');
     if (!comma) {
-        printf("Lexical Error: Missing comma in integer constant '%s'\n", text);
+        printf("%-25s Error: Missing comma in integer constant\n", text);
         return;
     }
     
@@ -102,32 +108,32 @@ void validateIntConstant(const char *text) {
     while(endPtr > base && isspace(*endPtr)) { *endPtr = '\0'; endPtr--; }
     
     if (strlen(value) == 0 || strlen(base) == 0) {
-        printf("Lexical Error: Missing value or base in integer constant '%s'\n", text);
+        printf("%-25s Error: Missing value or base in integer constant\n", text);
         return;
     }
     
     int baseNum = atoi(base);
     if (baseNum != 2 && baseNum != 8 && baseNum != 10) {
-        printf("Lexical Error: Invalid base '%s' in integer constant '%s'\n", base, text);
+        printf("%-25s Error: Invalid base in integer constant\n", text);
         return;
     }
     
     for (int i = 0; value[i] != '\0'; i++) {
         if (!isdigit(value[i])) {
-            printf("Lexical Error: Non-digit character in integer constant '%s'\n", text);
+            printf("%-25s Error: Non-digit character in integer constant\n", text);
             return;
         }
         int digit = value[i] - '0';
         if (baseNum == 8 && digit > 7) {
-            printf("Lexical Error: Digit '%c' not allowed in octal constant '%s'\n", value[i], text);
+            printf("%-25s Error: Digit not allowed in octal constant\n", text);
             return;
         }
         if (baseNum == 2 && digit > 1) {
-            printf("Lexical Error: Digit '%c' not allowed in binary constant '%s'\n", value[i], text);
+            printf("%-25s Error: Digit not allowed in binary constant\n", text);
             return;
         }
     }
-    printf("INTEGER_CONSTANT: %s\n", text);
+    printf("%-25s Integer constant\n", text);
 }
 
 /* Count occurrences of @ in a string */
@@ -176,8 +182,7 @@ int validateIO(const char *text, int is_scan) {
     // Check for semicolon at the end
     size_t len = strlen(text);
     if (text[len-1] != ';') {
-        printf("Lexical Error: Missing semicolon at end of %s statement\n", 
-               is_scan ? "scan" : "print");
+        printf("%-25s Error: Missing semicolon at end of statement\n", text);
         return 0;
     }
     
@@ -186,8 +191,7 @@ int validateIO(const char *text, int is_scan) {
     char *end_quote = start_quote ? strchr(start_quote + 1, '"') : NULL;
     
     if (!start_quote || !end_quote) {
-        printf("Lexical Error: Invalid format string in %s statement\n",
-               is_scan ? "scan" : "print");
+        printf("%-25s Error: Invalid format string\n", text);
         return 0;
     }
     
@@ -200,8 +204,7 @@ int validateIO(const char *text, int is_scan) {
     int arg_count = countArgs(text) - 1;  // -1 because first arg is format string
     
     if (at_count != arg_count) {
-        printf("Lexical Error: Number of @ symbols (%d) does not match number of arguments (%d) in %s statement\n",
-               at_count, arg_count, is_scan ? "scan" : "print");
+        printf("%-25s Error: Number of @ symbols does not match arguments\n", text);
         return 0;
     }
     
@@ -210,82 +213,21 @@ int validateIO(const char *text, int is_scan) {
         char *ptr = end_quote + 1;
         while (*ptr) {
             if (*ptr == '(' || *ptr == '\'' || *ptr == '"') {
-                printf("Lexical Error: scan statement can only take variables as arguments\n");
+                printf("%-25s Error: scan statement can only take variables\n", text);
                 return 0;
             }
             ptr++;
         }
     }
     
-    // If we get here, the statement is valid, so print the tokens
     if (is_scan) {
-        printf("KEYWORD: scan\n");
+        printf("%-25s Valid input statement\n", text);
     } else {
-        printf("KEYWORD: print\n");
+        printf("%-25s Valid output statement\n", text);
     }
-    printf("SEPARATOR: (\n");
-    
-    // Print the string constant token
-    char string_const[256] = {0};
-    snprintf(string_const, sizeof(string_const), "%.*s", (int)(end_quote - start_quote + 1), start_quote);
-    printf("STRING_CONSTANT: %s\n", string_const);
-    
-    // Print tokens for each argument
-    char *ptr = end_quote + 1;
-    while (*ptr) {
-        // Skip whitespace
-        while (*ptr && (*ptr == ' ' || *ptr == '\t')) ptr++;
-        
-        if (*ptr == ',') {
-            printf("SEPARATOR: ,\n");
-            ptr++;
-            continue;
-        }
-        
-        if (*ptr == '(') {
-            // This is an integer constant
-            char *closing = strchr(ptr, ')');
-            if (closing) {
-                char const_str[256] = {0};
-                snprintf(const_str, sizeof(const_str), "%.*s", (int)(closing - ptr + 1), ptr);
-                printf("INTEGER_CONSTANT: %s\n", const_str);
-                ptr = closing + 1;
-                continue;
-            }
-        }
-        
-        if (*ptr == '\'') {
-            // This is a character constant
-            char *next_quote = strchr(ptr + 1, '\'');
-            if (next_quote) {
-                char char_const[256] = {0};
-                snprintf(char_const, sizeof(char_const), "%.*s", (int)(next_quote - ptr + 1), ptr);
-                printf("CHAR_CONSTANT: %s\n", char_const);
-                ptr = next_quote + 1;
-                continue;
-            }
-        }
-        
-        if (isalpha(*ptr)) {
-            // This is an identifier
-            char id[MAX_ID_LEN] = {0};
-            int i = 0;
-            while (*ptr && (isalnum(*ptr) || *ptr == '_') && i < MAX_ID_LEN - 1) {
-                id[i++] = *ptr++;
-            }
-            printf("IDENTIFIER: %s\n", id);
-            continue;
-        }
-        
-        ptr++;
-    }
-    
-    printf("SEPARATOR: )\n");
-    printf("SEPARATOR: ;\n");
     
     return 1;
 }
-
 
 %}
 
@@ -300,7 +242,7 @@ STRINGCONST \"([^\"\\]|\\.)*\"
 WS          [ \t\n]+
 SLCOMMENT   "//".*\n
 MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
-VARDECL     \([a-z][a-z0-9]*([_]+[a-z0-9]+)?,[ \t](int|char)\)
+VARDECL     \([a-z][a-z0-9]*([_]+[a-z0-9]+)?([_]+[a-z0-9]+)?,[ \t](int|char)\)
 
 PRINT_STMT  print[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
 SCAN_STMT   scan[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
@@ -311,8 +253,18 @@ SCAN_STMT   scan[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
 {SLCOMMENT} ;  /* Skip single-line comments */
 {MLCOMMENT} ;  /* Skip multi-line comments */
 
-"begin VarDecl:"      { printf("BEGIN_VARDECL\n"); inVarDecl = 1; }
-"end VarDecl"         { printf("END_VARDECL\n"); inVarDecl = 0; }
+"begin VarDecl:"      { 
+    printf("%-25s Keyword\n", "begin"); 
+    printf("%-25s Keyword\n", "VarDecl"); 
+    printf("%-25s Separator\n", ":"); 
+    inVarDecl = 1; 
+}
+
+"end VarDecl"         { 
+    printf("%-25s Keyword\n", "end"); 
+    printf("%-25s Keyword\n", "VarDecl"); 
+    inVarDecl = 0; 
+}
 
 {VARDECL}   {
     char *start = strchr(yytext, '(');
@@ -332,73 +284,71 @@ SCAN_STMT   scan[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
     }
 }
 
-valid:
+"begin"     { printf("%-25s Keyword\n", yytext); }
+"end"       { printf("%-25s Keyword\n", yytext); }
+"int"       { printf("%-25s Keyword\n", yytext); }
+"char"      { printf("%-25s Keyword\n", yytext); }
+"if"        { printf("%-25s Keyword\n", yytext); }
+"then"      { printf("%-25s Keyword\n", yytext); }
+"else"      { printf("%-25s Keyword\n", yytext); }
+"while"     { printf("%-25s Keyword\n", yytext); }
+"for"       { printf("%-25s Keyword\n", yytext); }
+"main"      { printf("%-25s Keyword\n", yytext); }
+"input"     { printf("%-25s Keyword\n", yytext); }
+"output"    { printf("%-25s Keyword\n", yytext); }
+"program"   { printf("%-25s Keyword\n", yytext); }
+"VarDecl"   { printf("%-25s Keyword\n", yytext); }
+"inc"       { printf("%-25s Keyword\n", yytext); }
+"dec"       { printf("%-25s Keyword\n", yytext); }
+"print"     { printf("%-25s Keyword\n", yytext); }
+"scan"      { printf("%-25s Keyword\n", yytext); }
 
-"begin"     { printf("KEYWORD: %s\n", yytext); }
-"end"       { printf("KEYWORD: %s\n", yytext); }
-"int"       { printf("KEYWORD: %s\n", yytext); }
-"float"     { printf("KEYWORD: %s\n", yytext); }
-"if"        { printf("KEYWORD: %s\n", yytext); }
-"else"      { printf("KEYWORD: %s\n", yytext); }
-"while"     { printf("KEYWORD: %s\n", yytext); }
-"for"       { printf("KEYWORD: %s\n", yytext); }
-"main"      { printf("KEYWORD: %s\n", yytext); }
-"input"     { printf("KEYWORD: %s\n", yytext); }
-"output"    { printf("KEYWORD: %s\n", yytext); }
-"program"   { printf("KEYWORD: %s\n", yytext); }
-"VarDecl"   { printf("KEYWORD: %s\n", yytext); }
-"inc"       { printf("KEYWORD: %s\n", yytext); }
-"dec"       { printf("KEYWORD: %s\n", yytext); }
-"print"     { printf("KEYWORD: %s\n", yytext); }
-"scan"      { printf("KEYWORD: %s\n", yytext); }
+":="        { printf("%-25s Assignment operator\n", yytext); }
+"+="        { printf("%-25s Assignment operator\n", yytext); }
+"-="        { printf("%-25s Assignment operator\n", yytext); }
+"*="        { printf("%-25s Assignment operator\n", yytext); }
+"/="        { printf("%-25s Assignment operator\n", yytext); }
+"%="        { printf("%-25s Assignment operator\n", yytext); }
+"=="        { printf("%-25s Relational operator\n", yytext); }
+"<="        { printf("%-25s Relational operator\n", yytext); }
+">="        { printf("%-25s Relational operator\n", yytext); }
+"<>"        { printf("%-25s Relational operator\n", yytext); }
+"<"         { printf("%-25s Relational operator\n", yytext); }
+">"         { printf("%-25s Relational operator\n", yytext); }
+"="         { printf("%-25s Relational operator\n", yytext); }
 
-":="        { printf("ASSIGN_OP: %s\n", yytext); }
-"+="        { printf("ASSIGN_OP: %s\n", yytext); }
-"-="        { printf("ASSIGN_OP: %s\n", yytext); }
-"*="        { printf("ASSIGN_OP: %s\n", yytext); }
-"/="        { printf("ASSIGN_OP: %s\n", yytext); }
-"%="        { printf("ASSIGN_OP: %s\n", yytext); }
-"=="        { printf("REL_OP: %s\n", yytext); }
-"<="        { printf("REL_OP: %s\n", yytext); }
-">="        { printf("REL_OP: %s\n", yytext); }
-"<>"        { printf("REL_OP: %s\n", yytext); }
-"<"         { printf("REL_OP: %s\n", yytext); }
-">"         { printf("REL_OP: %s\n", yytext); }
-"="         { printf("REL_OP: %s\n", yytext); }
+"+"         { printf("%-25s Arithmetic operator\n", yytext); }
+"-"         { printf("%-25s Arithmetic operator\n", yytext); }
+"*"         { printf("%-25s Arithmetic operator\n", yytext); }
+"/"         { printf("%-25s Arithmetic operator\n", yytext); }
+"%"         { printf("%-25s Arithmetic operator\n", yytext); }
 
-"+"         { printf("ARITH_OP: %s\n", yytext); }
-"-"         { printf("ARITH_OP: %s\n", yytext); }
-"*"         { printf("ARITH_OP: %s\n", yytext); }
-"/"         { printf("ARITH_OP: %s\n", yytext); }
-"%"         { printf("ARITH_OP: %s\n", yytext); }
-
-"("         { printf("SEPARATOR: %s\n", yytext); }
-")"         { printf("SEPARATOR: %s\n", yytext); }
-"{"         { printf("SEPARATOR: %s\n", yytext); }
-"}"         { printf("SEPARATOR: %s\n", yytext); }
-";"         { printf("SEPARATOR: %s\n", yytext); }
-","         { printf("SEPARATOR: %s\n", yytext); }
-":"         { printf("SEPARATOR: %s\n", yytext); }
-"\""        { printf("SEPARATOR: %s\n", yytext); }
-"@"         { printf("SPECIAL: %s\n", yytext); }
+"("         { printf("%-25s Separator\n", yytext); }
+")"         { printf("%-25s Separator\n", yytext); }
+"{"         { printf("%-25s Separator\n", yytext); }
+"}"         { printf("%-25s Separator\n", yytext); }
+";"         { printf("%-25s Separator\n", yytext); }
+","         { printf("%-25s Separator\n", yytext); }
+":"         { printf("%-25s Separator\n", yytext); }
+"\""        { printf("%-25s Separator\n", yytext); }
+"@"         { printf("%-25s Special\n", yytext); }
 
 {INTCONST}  { validateIntConstant(yytext); }
-{CHARCONST} { printf("CHAR_CONSTANT: %s\n", yytext); }
-{STRINGCONST} { printf("STRING_CONSTANT: %s\n", yytext); }
+{CHARCONST} { printf("%-25s Character constant\n", yytext); }
+{STRINGCONST} { printf("%-25s String constant\n", yytext); }
 
 {ID}        {
     if (!inVarDecl && !isDeclared(yytext)) {
-        printf("Lexical Error: Variable '%s' used but not declared\n", yytext);
+        printf("%-25s Error: Variable used but not declared\n", yytext);
     } else {
-        printf("IDENTIFIER: %s\n", yytext);
+        printf("%-25s Identifier\n", yytext);
     }
 }
 
 {PRINT_STMT} { validateIO(yytext, 0); }
 {SCAN_STMT}  { validateIO(yytext, 1); }
 
-
-.           { printf("UNKNOWN TOKEN: %s\n", yytext); }
+.           { printf("%-25s Unknown token\n", yytext); }
 
 %%
 

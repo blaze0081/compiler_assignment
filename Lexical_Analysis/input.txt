@@ -2,18 +2,23 @@ begin program:
 
 begin VarDecl:
     (num1, int);
+    (print, char);
     (num2, int);
-    (sum, int);
+    (sum_tem_123, int);
 end VarDecl
 
-num1:=(10, 2);
-num2:=(131, 10);
-
-scan("@, @, @", a, b, c);
-
-// Perform addition
-sum := num1 + num2;
-
-// Display the result
-print("The values are @, @, and @: ", a, b, c);
+num1:= (10, 2);
+if num1 > (20, 2) then
+    begin
+        num1 :=(1, 10);
+        num2 -= (99, 8);
+        print("num1 = @, num2 = @", num1, num2);
+    end
+else
+    begin
+        num1 /=(10, 2);
+        print("num1 = @, num2 = @", num1);
+    end;
+    
+num3 := num1 + num2;
 end program
