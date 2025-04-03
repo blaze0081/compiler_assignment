@@ -1,5 +1,4 @@
 %{
-/* --- C Declarations and helper routines --- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +7,6 @@
 #define MAX_ID_LEN 100
 #define MAX_SYMBOLS 1000
 
-/* A simple symbol structure for variables declared in the VarDecl block */
 typedef struct Symbol {
     char name[MAX_ID_LEN];
     char type[10]; /* "int" or "char" */
@@ -32,39 +30,42 @@ int isKeyword(const char *str) {
     return 0;
 }
 
-/* Add variable to symbol table */
 void addSymbol(const char *name, const char *type) {
     /* Check for duplicate definition */
+    printf("(                         Separator\n");
     for (int i = 0; i < symbolCount; i++) {
         if (strcmp(symbols[i].name, name) == 0) {
-            printf("%-25s Error: Variable '%s' defined more than once\n", name, name);
-            return;
+            printf("%-25s Error: identifier already declared\n", name);
+            goto label;
         }
     }
     
     /* Check if keyword is used as variable */
     if (isKeyword(name)) {
-        printf("%-25s Error: Keyword '%s' cannot be used as a variable\n", name, name);
-        return;
+        printf("%-25s Error: Keyword is used as an identifier\n", name);
+        goto label;
     }
     
     /* Check underscore count */
     int underscoreCount = 0;
-    for (int i = 0; name[i] != '\0'; i++) {
+for (int i = 0; name[i] != '\0'; i++) {
         if (name[i] == '_')
             underscoreCount++;
     }
     if (underscoreCount > 1) {
-        printf("%-25s Error: Invalid variable name '%s' (more than one underscore)\n", name, name);
-        return;
+        printf("%-25s Error: invalid identifier\n", name);
+        goto label;
+    }
+
+    else{
+        printf("%s                        Identifier\n", name);
+        strcpy(symbols[symbolCount].name, name);
+        strcpy(symbols[symbolCount].type, type);
+        symbolCount++;
     }
     
-    strcpy(symbols[symbolCount].name, name);
-    strcpy(symbols[symbolCount].type, type);
-    symbolCount++;
     
-    printf("(                         Separator\n");
-    printf("%s                        Identifier\n", name);
+    label:
     printf(",                         Separator\n");
     printf("%s                        Keyword\n", type);
     printf(")                         Separator\n");
@@ -84,7 +85,7 @@ int isDeclared(const char *name) {
 void validateIntConstant(const char *text) {
     int len = strlen(text);
     if (len < 5) {
-        printf("%-25s Error: Invalid integer constant format\n", text);
+        printf("%-25s Error: invalid integer constant\n", text);
         return;
     }
     
@@ -94,7 +95,7 @@ void validateIntConstant(const char *text) {
     
     char *comma = strchr(inner, ',');
     if (!comma) {
-        printf("%-25s Error: Missing comma in integer constant\n", text);
+        printf("%-25s Error: invalid integer constant\n", text);
         return;
     }
     
@@ -108,28 +109,28 @@ void validateIntConstant(const char *text) {
     while(endPtr > base && isspace(*endPtr)) { *endPtr = '\0'; endPtr--; }
     
     if (strlen(value) == 0 || strlen(base) == 0) {
-        printf("%-25s Error: Missing value or base in integer constant\n", text);
+        printf("%-25s Error: invalid integer constant\n", text);
         return;
     }
     
     int baseNum = atoi(base);
     if (baseNum != 2 && baseNum != 8 && baseNum != 10) {
-        printf("%-25s Error: Invalid base in integer constant\n", text);
+        printf("%-25s Error: invalid integer constant\n", text);
         return;
     }
     
     for (int i = 0; value[i] != '\0'; i++) {
         if (!isdigit(value[i])) {
-            printf("%-25s Error: Non-digit character in integer constant\n", text);
+            printf("%-25s Error: invalid integer constant\n", text);
             return;
         }
         int digit = value[i] - '0';
         if (baseNum == 8 && digit > 7) {
-            printf("%-25s Error: Digit not allowed in octal constant\n", text);
+            printf("%-25s Error: invalid integer constant\n", text);
             return;
         }
         if (baseNum == 2 && digit > 1) {
-            printf("%-25s Error: Digit not allowed in binary constant\n", text);
+            printf("%-25s Error: invalid integer constant\n", text);
             return;
         }
     }
@@ -143,6 +144,16 @@ int countAtSymbols(const char *str) {
     while (ptr != NULL) {
         count++;
         ptr = strchr(ptr + 1, '@');
+    }
+    return count;
+}
+
+int countCommaSymbols(const char *str) {
+    int count = 0;
+    char *ptr = strchr(str, ',');
+    while (ptr != NULL) {
+        count++;
+        ptr = strchr(ptr + 1, ',');
     }
     return count;
 }
@@ -182,7 +193,7 @@ int validateIO(const char *text, int is_scan) {
     // Check for semicolon at the end
     size_t len = strlen(text);
     if (text[len-1] != ';') {
-        printf("%-25s Error: Missing semicolon at end of statement\n", text);
+        printf("%-25s  Error: invalid output statement\n", text);
         return 0;
     }
     
@@ -191,7 +202,7 @@ int validateIO(const char *text, int is_scan) {
     char *end_quote = start_quote ? strchr(start_quote + 1, '"') : NULL;
     
     if (!start_quote || !end_quote) {
-        printf("%-25s Error: Invalid format string\n", text);
+        printf("%-25s  Error: invalid output statement\n", text);
         return 0;
     }
     
@@ -202,9 +213,21 @@ int validateIO(const char *text, int is_scan) {
     
     int at_count = countAtSymbols(format_str);
     int arg_count = countArgs(text) - 1;  // -1 because first arg is format string
-    
+    int comma_count = countCommaSymbols(format_str);
+
+    //     // printf("comma: %d", comma_count);
+    if (is_scan && (comma_count-1 != arg_count)) {
+            printf("%-25s  Error: invalid input statement\n", text);
+        return 0;
+    }
+
     if (at_count != arg_count) {
-        printf("%-25s Error: Number of @ symbols does not match arguments\n", text);
+        if(is_scan){
+            printf("%-25s  Error: invalid input statement\n", text);
+        }
+        else{
+            printf("%-25s  Error: invalid output statement\n", text);
+        }
         return 0;
     }
     
@@ -213,7 +236,7 @@ int validateIO(const char *text, int is_scan) {
         char *ptr = end_quote + 1;
         while (*ptr) {
             if (*ptr == '(' || *ptr == '\'' || *ptr == '"') {
-                printf("%-25s Error: scan statement can only take variables\n", text);
+                printf("%-25s  Error: invalid input statement\n", text);
                 return 0;
             }
             ptr++;
@@ -302,6 +325,9 @@ SCAN_STMT   scan[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
 "dec"       { printf("%-25s Keyword\n", yytext); }
 "print"     { printf("%-25s Keyword\n", yytext); }
 "scan"      { printf("%-25s Keyword\n", yytext); }
+"do"        { printf("%-25s Keyword\n", yytext); }
+"to"        { printf("%-25s Keyword\n", yytext); }
+
 
 ":="        { printf("%-25s Assignment operator\n", yytext); }
 "+="        { printf("%-25s Assignment operator\n", yytext); }
@@ -352,15 +378,9 @@ SCAN_STMT   scan[ \t]*\(\"[^\"]*\"([ \t]*,[ \t]*[^,;]*)*[ \t]*\);?
 
 %%
 
-int main(int argc, char **argv) {
-    if (argc > 1) {
-        FILE *file = fopen(argv[1], "r");
-        if (!file) {
-            perror("Error opening file");
-            exit(1);
-        }
-        yyin = file;
-    }
+int main() {
+    
+    yyin=fopen( "input.txt", "r");
     yylex();
     return 0;
 }

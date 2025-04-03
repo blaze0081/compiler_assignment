@@ -1,0 +1,96 @@
+TESTCASE 1
+__________________________________________
+begin program:
+
+begin VarDecl:
+    (num1, int);
+    (print, char);
+    (num2, int);
+    (sum_tem_123, int);
+end VarDecl
+
+num1:= (10, 2);
+if num1 > (20, 2) then
+    begin
+        num1 :=(1, 10);
+        num2 -= (99, 8);
+        print("num1 = @, num2 = @", num1, num2);
+    end
+else
+    begin
+        num1 /=(10, 2);
+        print("num1 = @, num2 = @", num1);
+    end;
+    
+num3 := num1 + num2;
+end program
+__________________________________________
+TESTCASE 2
+__________________________________________
+begin program:
+
+begin VarDecl:
+    (a, int)
+    (b, int); (c, int);
+    (b, char);
+    // list of variables ended.
+end VarDecl
+
+b := (20, 10);
+print("Welcome !!!");
+scan("@, @", a, b);
+for a := (10, 8) to b + (10, 2) inc (1, 10) do
+    begin
+        print("The value of a = @", a);
+        scan("@, @", b);
+    end;
+end program
+__________________________________________
+TESTCASE 3
+__________________________________________
+begin program:
+
+begin VarDecl:
+    (number, int);
+    (sum, int);
+
+end VarDecl
+
+number := (5, 10);
+sum := (0, 10);
+scan("@, ", sum);
+
+while (number > (0, 10)) do
+    begin
+        sum *= number;
+        number -= (12, 2);
+    end;
+    
+print("Final sum = @", sum);
+end program
+__________________________________________
+CORRECT OUTPUT
+__________________________________________
+begin program:
+
+begin VarDecl:
+    (num1, int);
+    (num2, int);
+    (sum_tem123, int);
+end VarDecl
+
+num1:= (10, 2);
+if num1 > (10, 2) then
+    begin
+        num1 :=(1, 10);
+        num2 -= (66, 8);
+        print("num1 = @, num2 = @", num1, num2);
+    end
+else
+    begin
+        num1 /=(10, 2);
+        print("num1 = @", num1);
+    end;
+    
+num3 := num1 + num2;
+end program
