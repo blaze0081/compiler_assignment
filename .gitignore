@@ -1,2 +1,3 @@
-Lexical_Analysis/lexer
-Lexical_Analysis/lexer
+lexer
+lex.yy.c
+Lexical_Analysis/lex.yy.c

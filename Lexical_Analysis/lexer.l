@@ -193,7 +193,12 @@ int validateIO(const char *text, int is_scan) {
     // Check for semicolon at the end
     size_t len = strlen(text);
     if (text[len-1] != ';') {
-        printf("%-25s  Error: invalid output statement\n", text);
+        switch(is_scan){
+            case 0:
+                printf("%-25s  Error: invalid input statement [no semicolon]\n", text);
+            case 1:
+                printf("%-25s  Error: invalid output statement [no semicolon]\n", text);
+        }
         return 0;
     }
     
@@ -202,7 +207,12 @@ int validateIO(const char *text, int is_scan) {
     char *end_quote = start_quote ? strchr(start_quote + 1, '"') : NULL;
     
     if (!start_quote || !end_quote) {
-        printf("%-25s  Error: invalid output statement\n", text);
+        switch(is_scan){
+            case 0:
+                printf("%-25s  Error: invalid input statement [incomplete line]\n", text);
+            case 1:
+                printf("%-25s  Error: invalid output statement [incomplete line]\n", text);
+        }
         return 0;
     }
     
@@ -215,18 +225,18 @@ int validateIO(const char *text, int is_scan) {
     int arg_count = countArgs(text) - 1;  // -1 because first arg is format string
     int comma_count = countCommaSymbols(format_str);
 
-    //     // printf("comma: %d", comma_count);
-    if (is_scan && (comma_count-1 != arg_count)) {
-            printf("%-25s  Error: invalid input statement\n", text);
+    // print("comma:, %d", comma_count); LEGAL STATEMENT
+    if (is_scan && (comma_count != arg_count-1)) {
+            printf("%-25s  Error: invalid input statement [comma count does NOT match arguments]\n", text);
         return 0;
     }
 
     if (at_count != arg_count) {
-        if(is_scan){
-            printf("%-25s  Error: invalid input statement\n", text);
-        }
-        else{
-            printf("%-25s  Error: invalid output statement\n", text);
+        switch(is_scan){
+            case 0:
+                printf("%-25s  Error: invalid input statement [@ count does NOT match argument count]\n", text);
+            case 1:
+                printf("%-25s  Error: invalid output statement [@ count does NOT match argument count]\n", text);
         }
         return 0;
     }
@@ -236,7 +246,7 @@ int validateIO(const char *text, int is_scan) {
         char *ptr = end_quote + 1;
         while (*ptr) {
             if (*ptr == '(' || *ptr == '\'' || *ptr == '"') {
-                printf("%-25s  Error: invalid input statement\n", text);
+                printf("%-25s  Error: invalid input statement [invalid declaration]\n", text);
                 return 0;
             }
             ptr++;
@@ -244,7 +254,7 @@ int validateIO(const char *text, int is_scan) {
     }
     
     if (is_scan) {
-        printf("%-25s Valid input statement\n", text);
+        printf("%-25s Valid input statements\n", text);
     } else {
         printf("%-25s Valid output statement\n", text);
     }
@@ -257,7 +267,6 @@ int validateIO(const char *text, int is_scan) {
 %option noyywrap
 
 /* Regular Expression Definitions */
-DIGIT       [0-9]
 ID          [a-z]([a-z0-9]*_?[a-z0-9]*)?
 INTCONST    \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST   \'(\\.|[^\\\'])?\'
