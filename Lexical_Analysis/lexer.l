@@ -267,6 +267,7 @@ int validateIO(const char *text, int is_scan) {
 %option noyywrap
 
 /* Regular Expression Definitions */
+DIGIT       [0-9]
 ID          [a-z]([a-z0-9]*_?[a-z0-9]*)?
 INTCONST    \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST   \'(\\.|[^\\\'])?\'
