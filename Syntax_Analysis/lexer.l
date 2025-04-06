@@ -3,14 +3,15 @@
 %}
 
 /* Regular Expression Definitions */
-DIGITS       [0-9]+
-ID          [a-z]([a-z0-9]*_?[a-z0-9]*)?
-INTCONST    \([0-9]+[ \t]*,[ \t]*[0-9]*\)
-CHARCONST   \'(\\.|[^\\\'])?\'
-STRINGCONST \"([^\"\\]|\\.)*\"
-WS          [ \t\n]+
-SLCOMMENT   "//".*\n
-MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
+DIGITS                    [0-9]+
+ID                        [a-z]([a-z0-9]*_?[a-z0-9]*)?
+INTCONST                  \([0-9]+[ \t]*,[ \t]*[0-9]*\)
+CHARCONST                 \'(\\.|[^\\\'])?\'
+SCAN_STRINGCONST          \"@([ ]*,[ ]*@)*\"
+PRINT_STRINGCONST         \"([^\"\\]|\\.)*\"
+WS                        [ \t\n]+
+SLCOMMENT                 "//".*\n
+MLCOMMENT                 "/*"([^*]|\*+[^*/])*\*+"/"
 
 
 %%
@@ -24,7 +25,6 @@ MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
 "int"       { return INT; }
 "char"      { return CHAR; }
 "if"        { return IF; }
-"then"      { return THEN; }
 "else"      { return ELSE; }
 "while"     { return WHILE; }
 "for"       { return FOR; }
@@ -63,13 +63,14 @@ MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
 ";"         { return SEMI_COLON; }
 ","         { return COMMA; }
 ":"         { return COLON; }
-"@"         { return AT; }
-"\""        { return QUOTE; }
 
 {DIGITS}    { return DIGIT; }
 {INTCONST}  { return INTEGER_CONSTANT; }
 {CHARCONST} { return CHAR_CONSTANT; }
-{STRINGCONST} { return STRING_CONSTANT; }
+{SCAN_STRINGCONST} { return SCAN_STRING_CONSTANT; }
+{PRINT_STRINGCONST} { return PRINT_STRING_CONSTANT; }
+
+
 {ID}        { return IDENTIFIER; }
 
 .           { /* UNKNOWN TOKEN */ }

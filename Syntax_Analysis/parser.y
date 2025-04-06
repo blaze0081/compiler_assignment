@@ -6,18 +6,20 @@ extern FILE* yyin;
 extern int yylineno;
 extern int yylex(void);
 extern int yydebug;
+void yyerror(const char *s);
+
 %}
 
 /*tokens defined*/
 /*
-TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH 
+TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 
 
 */
 %token PROGRAM VARDECL 
 %token T_BEGIN END
 %token INT CHAR
-%token IF THEN ELSE WHILE FOR DO TO
+%token IF ELSE WHILE FOR DO TO
 %token INC DEC
 %token PRINT SCAN
 
@@ -49,13 +51,12 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH
 %token SEMI_COLON             /* ; */
 %token COMMA                  /* , */
 %token COLON                  /* : */
-%token AT                     /* @ */
-%token QUOTE                  /* " */
 
 %token DIGIT
 %token INTEGER_CONSTANT
 %token CHAR_CONSTANT
-%token STRING_CONSTANT
+%token PRINT_STRING_CONSTANT
+%token SCAN_STRING_CONSTANT
 %token IDENTIFIER
 
 /*FILL IN THESE LATER*/
@@ -63,7 +64,7 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH
 %type assignment_statement input_output_statement if_statement while_statement for_statement block_statement
 %type variable assignment_operators expression print_arguments scan_arguments 
 %type print_formatted_text print_expression_list scan_formatted_text scan_variable_list
-%type alphabet_string print_text_tail scan_format optional_else condition relop inc_dec
+%type optional_else condition relop inc_dec
 %type factor arithmatic_operator 
 
 %left PLUS MINUS MULT DIV MODULO
@@ -129,7 +130,12 @@ assignment_statement:
 ;
 
 assignment_operators:
-    ASSIGN_EQUALS PLUS_EQUALS MINUS_EQUALS MULT_EQUALS DIV_EQUALS MODULO_EQUALS
+    ASSIGN_EQUALS 
+    | PLUS_EQUALS 
+    | MINUS_EQUALS 
+    | MULT_EQUALS 
+    | DIV_EQUALS 
+    | MODULO_EQUALS
 ;
 
 block_statement:
@@ -147,17 +153,10 @@ print_arguments:
 ;
 
 print_formatted_text:
-    QUOTE print_text QUOTE
+    /*empty* print()*/ 
+    | PRINT_STRING_CONSTANT
 ;
 
-print_text:
-    alphabet_string AT print_text_tail
-;
-
-print_text_tail:
-    alphabet_string
-    | alphabet_string AT print_text_tail
-;
 
 print_expression_list:
     IDENTIFIER
@@ -165,23 +164,13 @@ print_expression_list:
 ;
 
 
-alphabet_string:
-    /*empty (ε)*/
-    | STRING_CONSTANT alphabet_string
-;
-
 scan_arguments:
     scan_formatted_text
     | scan_formatted_text COMMA scan_variable_list
 ;
 
 scan_formatted_text:
-    QUOTE scan_format QUOTE
-;
-
-scan_format:
-    AT 
-    | AT COMMA scan_format
+    SCAN_STRING_CONSTANT
 ;
 
 scan_variable_list:
@@ -189,8 +178,8 @@ scan_variable_list:
     | scan_variable_list COMMA IDENTIFIER
 ;
 
-if_statement: 
-    IF LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN THEN block_statement optional_else
+if_statement:
+    IF condition block_statement optional_else
 ;
 
 optional_else:
@@ -199,7 +188,7 @@ optional_else:
 ;
 
 condition:
-    expression relop expression
+    variable relop expression
     | variable
 ;
 
@@ -217,7 +206,8 @@ while_statement:
 ;
 
 for_statement:
-    FOR variable EQUALS expression TO expression inc_dec expression DO block_statement
+    FOR variable ASSIGN_EQUALS expression TO expression inc_dec expression DO block_statement
+    | FOR variable ASSIGN_EQUALS expression TO variable arithmatic_operator expression inc_dec expression DO block_statement
 ;
 
 inc_dec: 
@@ -273,7 +263,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-int yyerror(char *s) {
-    fprintf(stderr, "%s\n", s);
-    return 0;
+void yyerror(const char *s) {
+    fprintf(stderr, "Syntax Error: %s at line %d\n", s, yylineno);
 }
