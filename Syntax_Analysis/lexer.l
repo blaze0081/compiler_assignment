@@ -3,6 +3,7 @@
 %}
 
 /* Regular Expression Definitions */
+DIGITS       [0-9]+
 ID          [a-z]([a-z0-9]*_?[a-z0-9]*)?
 INTCONST    \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST   \'(\\.|[^\\\'])?\'
@@ -18,7 +19,7 @@ MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
 {MLCOMMENT} ;  /* Skip multi-line comments */
 
 
-"begin"     { return BEGIN; }
+"begin"     { return T_BEGIN; }
 "end"       { return END; }
 "int"       { return INT; }
 "char"      { return CHAR; }
@@ -27,22 +28,21 @@ MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
 "else"      { return ELSE; }
 "while"     { return WHILE; }
 "for"       { return FOR; }
-"main"      { return MAIN; }
-"program"   { return  PROGRAM;}
-"VarDecl"   { return  VARDECL;}
-"inc"       { return  INC;}
-"dec"       { return  DEC;}
-"print"     { return  PRINT;}
-"scan"      { return  SCAN;}
-"do"        { return  DO;}
-"to"        { return  TO;}
+"program"   { return PROGRAM;}
+"VarDecl"   { return VARDECL;}
+"inc"       { return INC;}
+"dec"       { return DEC;}
+"print"     { return PRINT;}
+"scan"      { return SCAN;}
+"do"        { return DO;}
+"to"        { return TO;}
 
 ":="        { return ASSIGN_EQUALS; }
 "+="        { return PLUS_EQUALS; }
 "-="        { return MINUS_EQUALS; }
 "*="        { return MULT_EQUALS; }
 "/="        { return DIV_EQUALS; }
-"%="        { return MODULO_EUQALS; }
+"%="        { return MODULO_EQUALS; }
 "<="        { return LESS_EQUALS;}
 ">="        { return GREATER_EQUALS; }
 "<>"        { return NOT_EQUALS; }
@@ -58,15 +58,15 @@ MLCOMMENT   "/*"([^*]|\*+[^*/])*\*+"/"
 
 "("         { return LEFT_ROUND_PARAN; }
 ")"         { return RIGHT_ROUND_PARAN; }
-"{"         { return LEFT_CURLY_PARAN; }
-"}"         { return RIGHT_CURLY_PARAN; }
+"["         { return LEFT_SQ_PARAN; }
+"]"         { return RIGHT_SQ_PARAN; }
 ";"         { return SEMI_COLON; }
 ","         { return COMMA; }
 ":"         { return COLON; }
-"\ "        { return BACK_SLASH }
-"@"         { return AT}
-"\""        { return QUOTE}
+"@"         { return AT; }
+"\""        { return QUOTE; }
 
+{DIGITS}    { return DIGIT; }
 {INTCONST}  { return INTEGER_CONSTANT; }
 {CHARCONST} { return CHAR_CONSTANT; }
 {STRINGCONST} { return STRING_CONSTANT; }

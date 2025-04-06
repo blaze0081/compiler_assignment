@@ -1,3 +1,9 @@
 lexer
 lex.yy.c
 Lexical_Analysis/lex.yy.c
+Syntax_Analysis/a.out
+Syntax_Analysis/input.txt
+Syntax_Analysis/parser.tab.c
+Syntax_Analysis/parser.tab.h
+Syntax_Analysis/y.tab.c
+Syntax_Analysis/y.tab.h
