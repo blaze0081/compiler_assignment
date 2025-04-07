@@ -7,8 +7,7 @@ DIGITS                    [0-9]+
 ID                        [a-z]([a-z0-9]*_?[a-z0-9]*)?
 INTCONST                  \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST                 \'(\\.|[^\\\'])?\'
-SCAN_STRINGCONST          \"@([ ]*,[ ]*@)*\"
-PRINT_STRINGCONST         \"([^\"\\]|\\.)*\"
+IO_STRINGCONST            \(\"[^\"]*\"[^\"]*\)
 WS                        [ \t\n]+
 SLCOMMENT                 "//".*\n
 MLCOMMENT                 "/*"([^*]|\*+[^*/])*\*+"/"
@@ -64,11 +63,10 @@ MLCOMMENT                 "/*"([^*]|\*+[^*/])*\*+"/"
 ","         { return COMMA; }
 ":"         { return COLON; }
 
-{DIGITS}    { return DIGIT; }
-{INTCONST}  { return INTEGER_CONSTANT; }
-{CHARCONST} { return CHAR_CONSTANT; }
-{SCAN_STRINGCONST} { return SCAN_STRING_CONSTANT; }
-{PRINT_STRINGCONST} { return PRINT_STRING_CONSTANT; }
+{DIGITS}    { yylval = strdup(yytext); return DIGIT; }
+{INTCONST}  { yylval = strdup(yytext); return INTEGER_CONSTANT; }
+{CHARCONST} { yylval = strdup(yytext); return CHAR_CONSTANT; }
+{IO_STRINGCONST} { yylval = strdup(yytext); return IO_STRING_CONSTANT; }
 
 
 {ID}        { return IDENTIFIER; }

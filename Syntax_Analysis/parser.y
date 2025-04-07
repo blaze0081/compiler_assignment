@@ -2,18 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "syntax.h"
 extern FILE* yyin;
 extern int yylineno;
 extern int yylex(void);
 extern int yydebug;
 void yyerror(const char *s);
-
 %}
+%define api.value.type {char *}
 
 /*tokens defined*/
 /*
 TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
-
 
 */
 %token PROGRAM VARDECL 
@@ -55,8 +55,7 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %token DIGIT
 %token INTEGER_CONSTANT
 %token CHAR_CONSTANT
-%token PRINT_STRING_CONSTANT
-%token SCAN_STRING_CONSTANT
+%token IO_STRING_CONSTANT
 %token IDENTIFIER
 
 /*FILL IN THESE LATER*/
@@ -118,7 +117,7 @@ statement_list:
 
 statement:
     assignment_statement SEMI_COLON
-    | input_output_statement SEMI_COLON
+    | input_output_statement SEMI_COLON{printf("%s\n", $1);}
     | if_statement SEMI_COLON
     | while_statement SEMI_COLON
     | for_statement SEMI_COLON
@@ -143,18 +142,18 @@ block_statement:
 ;
 
 input_output_statement:
-    PRINT LEFT_ROUND_PARAN print_arguments RIGHT_ROUND_PARAN
-    | SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN
+    PRINT  print_arguments {validateIO($2, 0);}
+    | SCAN  scan_arguments {validateIO($2, 1);}
 ;
 
 print_arguments:
     print_formatted_text
-    | print_formatted_text COMMA print_expression_list
+    | print_formatted_text COMMA print_expression_list{printf("%s\n", $3);}
 ;
 
 print_formatted_text:
     /*empty* print()*/ 
-    | PRINT_STRING_CONSTANT
+    | IO_STRING_CONSTANT
 ;
 
 
@@ -166,11 +165,11 @@ print_expression_list:
 
 scan_arguments:
     scan_formatted_text
-    | scan_formatted_text COMMA scan_variable_list
+    | scan_formatted_text COMMA scan_variable_list{printf("%s\n", $3);}
 ;
 
 scan_formatted_text:
-    SCAN_STRING_CONSTANT
+    IO_STRING_CONSTANT
 ;
 
 scan_variable_list:
@@ -230,7 +229,9 @@ arithmatic_operator:
 
 factor:
     variable
-    | INTEGER_CONSTANT
+    | INTEGER_CONSTANT{
+        validateIntConstant($1);
+    }
     | CHAR_CONSTANT
     | LEFT_ROUND_PARAN expression RIGHT_ROUND_PARAN
 ;

@@ -1,3 +1,3 @@
 flex lexer.l
 yacc -d parser.y
-cc lex.yy.c y.tab.c -ll
+cc lex.yy.c y.tab.c syntax.c -ll
