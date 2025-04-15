@@ -100,6 +100,7 @@ declaration:
     | LEFT_ROUND_PARAN variable_name LEFT_SQ_PARAN DIGIT RIGHT_SQ_PARAN COMMA type RIGHT_ROUND_PARAN SEMI_COLON
 ;
 
+
 type:
     INT
     | CHAR
@@ -117,7 +118,7 @@ statement_list:
 
 statement:
     assignment_statement SEMI_COLON
-    | input_output_statement SEMI_COLON{printf("%s\n", $1);}
+    | input_output_statement SEMI_COLON
     | if_statement SEMI_COLON
     | while_statement SEMI_COLON
     | for_statement SEMI_COLON
@@ -148,7 +149,7 @@ input_output_statement:
 
 print_arguments:
     print_formatted_text
-    | print_formatted_text COMMA print_expression_list{printf("%s\n", $3);}
+    | print_formatted_text COMMA print_expression_list
 ;
 
 print_formatted_text:
@@ -165,7 +166,7 @@ print_expression_list:
 
 scan_arguments:
     scan_formatted_text
-    | scan_formatted_text COMMA scan_variable_list{printf("%s\n", $3);}
+    | scan_formatted_text COMMA scan_variable_list
 ;
 
 scan_formatted_text:
@@ -179,6 +180,7 @@ scan_variable_list:
 
 if_statement:
     IF condition block_statement optional_else
+    | IF LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN block_statement optional_else
 ;
 
 optional_else:
@@ -201,7 +203,7 @@ relop:
 ;
 
 while_statement:
-    WHILE LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN block_statement
+    WHILE LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN DO block_statement
 ;
 
 for_statement:
@@ -265,5 +267,5 @@ int main(int argc, char *argv[]) {
 }
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Syntax Error: %s at line %d\n", s, yylineno);
+    fprintf(stderr, "Syntax Error\n");
 }
