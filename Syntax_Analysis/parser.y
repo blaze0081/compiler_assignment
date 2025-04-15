@@ -155,8 +155,7 @@ input_output_statement:
         validateIO($3, printArgs, printArgCount, 0);
         printArgCount = 0;  // reset for next use
     }
-    |
-    SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN {
+    | SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN {
         validateIO($3, scanArgs, scanArgCount, 1);
         scanArgCount = 0;  // reset for next use
     }
@@ -180,12 +179,8 @@ print_expression_list:
 ;
 
 print_expression_item:
-    IDENTIFIER { printArgs[printArgCount++] = $1; $$ = $1; }
-    | INTEGER_CONSTANT { printArgs[printArgCount++] = $1; $$ = $1; }
-    | CHAR_CONSTANT { printArgs[printArgCount++] = $1; $$ = $1; }
+    factor {printArgs[printArgCount++] = $1; $$ = $1;}
 ;
-
-
 
 
 scan_arguments:

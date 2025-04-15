@@ -1,18 +1,18 @@
 %{
-#include "y.tab.h"
+#include "parser.tab.h"
 #include "ast.h"
 
 %}
 
 /* Regular Expression Definitions */
+SLCOMMENT                 "//".*\n
+MLCOMMENT                 "/*"([^*]|\*+[^*/])*\*+"/"
 DIGITS                    [0-9]+
 ID                        [a-z]([a-z0-9]*_?[a-z0-9]*)?
 INTCONST                  \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST                 \'(\\.|[^\\\'])?\'
-IO_STRINGCONST            \(\"[^\"]*\"[^\"]*\)
+IO_STRINGCONST            \"[^\"]*\"
 WS                        [ \t\n]+
-SLCOMMENT                 "//".*\n
-MLCOMMENT                 "/*"([^*]|\*+[^*/])*\*+"/"
 
 
 %%
@@ -67,8 +67,8 @@ MLCOMMENT                 "/*"([^*]|\*+[^*/])*\*+"/"
 
 {DIGITS}    { yylval.tree=createNode();Node*t=createNode();  yylval.tree->ival=atoi(yytext); strcpy(yylval.tree->name,"DIGIT"); strcpy(t->name,yytext); addchild(yylval.tree,t); return DIGIT; }
 {INTCONST}  { yylval.tree=createNode();Node*t=createNode();  yylval.tree->ival=atoi(yytext); strcpy(yylval.tree->name,"INTCONST"); strcpy(t->name,yytext); addchild(yylval.tree,t); return INTEGER_CONSTANT; }
-{CHARCONST} { yylval.tree=createNode();Node*t=createNode();  yylval.tree->ival=atoi(yytext); strcpy(yylval.tree->name,"CHARCONST"); strcpy(t->name,yytext); addchild(yylval.tree,t); return CHAR_CONSTANT; }
-{IO_STRINGCONST} { yylval.tree=createNode();Node*t=createNode();  yylval.tree->ival=atoi(yytext); strcpy(yylval.tree->name,"IOCONST"); strcpy(t->name,yytext); addchild(yylval.tree,t); return IO_STRING_CONSTANT; }
+{CHARCONST} { yylval.tree=createNode();Node*t=createNode();  strcpy(yylval.tree->name,"CHARCONST"); strcpy(t->name,yytext); addchild(yylval.tree,t); return CHAR_CONSTANT; }
+{IO_STRINGCONST} { yylval.tree=createNode();Node*t=createNode(); strcpy(yylval.tree->name,"IOCONST"); strcpy(t->name,yytext); addchild(yylval.tree,t); return IO_STRING_CONSTANT; }
 
 
 {ID}        { yylval.tree=createNode(); strcpy(yylval.tree->name,yytext); return IDENTIFIER; }

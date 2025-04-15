@@ -1,0 +1,9 @@
+begin program:
+
+begin VarDecl:
+(x, int);
+end VarDecl
+
+print("hello");
+
+end program

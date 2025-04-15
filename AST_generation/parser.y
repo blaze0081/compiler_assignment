@@ -67,7 +67,7 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %type <tree> assignment_statement input_output_statement if_statement while_statement for_statement block_statement
 %type <tree> variable assignment_operators expression print_arguments scan_arguments 
 %type <tree> print_formatted_text print_expression_list scan_formatted_text scan_variable_list
-%type <tree> condition relop inc_dec expression_check
+%type <tree> condition relop inc_dec expression_check print_expression_item
 %type <tree> factor arithmatic_operator statement variable_aop_exp
 
 %left PLUS MINUS MULT DIV MODULO
@@ -75,6 +75,14 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %left LEFT_ROUND_PARAN LEFT_SQ_PARAN RIGHT_ROUND_PARAN RIGHT_SQ_PARAN
 %right ASSIGN_EQUALS PLUS_EQUALS MINUS_EQUALS MULT_EQUALS DIV_EQUALS MODULO_EQUALS NOT_EQUALS
 
+%code {
+    #define MAX_ARGS 100
+    char* printArgs[MAX_ARGS];
+    int printArgCount = 0;
+
+    char* scanArgs[MAX_ARGS];
+    int scanArgCount = 0;
+}
 
 %%
 
@@ -89,13 +97,13 @@ program:
         addchild($$,$5);
         myhead=$$;
         dfs(myhead);
+        printf("Valid Program\n");
         YYACCEPT;
     }
 ;
 
 variable_declaration:
-    /*empty*/
-    | T_BEGIN VARDECL COLON declaration_list END VARDECL
+    T_BEGIN VARDECL COLON declaration_list END VARDECL
     {
         $$=$4;
     }
@@ -145,8 +153,7 @@ variable_name:
 ;
 
 statement_list:
-    /*empty*/
-    | statement 
+    statement 
     {
         $$=createNode();
         setname($$,"STATEMENTS");
@@ -233,39 +240,93 @@ block_statement:
 ;
 
 input_output_statement:
-    PRINT  print_arguments {validateIO($2->name, 0);}
-    | SCAN  scan_arguments {validateIO($2->name, 1);}
+    PRINT LEFT_ROUND_PARAN print_arguments RIGHT_ROUND_PARAN 
+    {
+        validateIO($3, printArgs, printArgCount, 0);
+        printArgCount = 0;  
+        $$=$3;
+    }
+    | SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN
+    {
+        validateIO($3, scanArgs, scanArgCount, 1);
+        scanArgCount = 0;  
+        $$=$3;
+    }
 ;
 
 print_arguments:
     print_formatted_text
+    {
+        $$ = createNode();
+        setname($$, "Print");
+        addchild($$, $1);
+    }
     | print_formatted_text COMMA print_expression_list
+    {
+        $$ = createNode();
+        setname($$, "Print");
+        addchild($$, $1);  
+        addchild($$, $3);  
+    }
 ;
 
 print_formatted_text:
-    /*empty* print()*/ 
-    | IO_STRING_CONSTANT
+    IO_STRING_CONSTANT
+    {
+        $$=$1;
+    }
 ;
 
-
 print_expression_list:
-    IDENTIFIER
-    | print_expression_list COMMA IDENTIFIER
+    print_expression_item
+    {
+        $$=$1;
+    }
+    | print_expression_list COMMA print_expression_item 
+    {
+        addchild($$, $3);
+        $$=$1;
+    }
+;
+
+print_expression_item:
+    factor 
+    {
+        printArgs[printArgCount++] = $1; 
+        $$ = $1;
+    }
 ;
 
 
 scan_arguments:
-    scan_formatted_text
-    | scan_formatted_text COMMA scan_variable_list
+    scan_formatted_text COMMA scan_variable_list
+    {
+        $$ = createNode();
+        setname($$, "Scan");
+        addchild($$, $1);
+        addchild($$, $3);
+    }
 ;
 
 scan_formatted_text:
     IO_STRING_CONSTANT
+    {
+        $$=$1;
+    }
 ;
 
 scan_variable_list:
     IDENTIFIER
+    {
+        $$ = createNode();
+        setname($$, "IDENTIFIER");
+        addchild($$, $1);
+    }
     | scan_variable_list COMMA IDENTIFIER
+    {
+        $$ = $1;
+        addchild($$, $3);
+    }
 ;
 
 if_statement:
@@ -286,12 +347,29 @@ if_statement:
         addchild($$,$5);
         
     }
+    | IF LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN block_statement
+    {
+        $$=createNode();
+        setname($$,"Branch");
+        addchild($$,$3);
+        addchild($$,$5);
+        
+    }
+    | IF LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN block_statement ELSE block_statement
+    {
+        $$=createNode();
+        setname($$,"Branch");
+        addchild($$,$3);
+        addchild($$,$5);
+        addchild($$,$7);
+        
+    }
 ;
+
 
 condition:
     variable relop expression
     {
-        printf("Reached condition node creation\n");
         $$=createNode();
         setname($$,$2->name);
         addchild($$,$1);
