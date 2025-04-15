@@ -64,13 +64,21 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %type variable assignment_operators expression print_arguments scan_arguments 
 %type print_formatted_text print_expression_list scan_formatted_text scan_variable_list
 %type optional_else condition relop inc_dec
-%type factor arithmatic_operator 
+%type factor arithmatic_operator print_expression_item
 
 %left PLUS MINUS MULT DIV MODULO
 %left LESS_EQUALS LESS GREATER GREATER_EQUALS 
 %left LEFT_ROUND_PARAN LEFT_SQ_PARAN RIGHT_ROUND_PARAN RIGHT_SQ_PARAN
 %right ASSIGN_EQUALS PLUS_EQUALS MINUS_EQUALS MULT_EQUALS DIV_EQUALS MODULO_EQUALS NOT_EQUALS
 
+%code {
+    #define MAX_ARGS 100
+    char* printArgs[MAX_ARGS];
+    int printArgCount = 0;
+
+    char* scanArgs[MAX_ARGS];
+    int scanArgCount = 0;
+}
 
 
 
@@ -143,13 +151,21 @@ block_statement:
 ;
 
 input_output_statement:
-    PRINT  print_arguments {validateIO($2, 0);}
-    | SCAN  scan_arguments {validateIO($2, 1);}
+    PRINT LEFT_ROUND_PARAN print_arguments RIGHT_ROUND_PARAN {
+        validateIO($3, printArgs, printArgCount, 0);
+        printArgCount = 0;  // reset for next use
+    }
+    |
+    SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN {
+        validateIO($3, scanArgs, scanArgCount, 1);
+        scanArgCount = 0;  // reset for next use
+    }
 ;
+
 
 print_arguments:
     print_formatted_text
-    | print_formatted_text COMMA print_expression_list
+    | print_formatted_text COMMA print_expression_list 
 ;
 
 print_formatted_text:
@@ -159,9 +175,17 @@ print_formatted_text:
 
 
 print_expression_list:
-    IDENTIFIER
-    | print_expression_list COMMA IDENTIFIER
+    print_expression_item 
+    | print_expression_list COMMA print_expression_item 
 ;
+
+print_expression_item:
+    IDENTIFIER { printArgs[printArgCount++] = $1; $$ = $1; }
+    | INTEGER_CONSTANT { printArgs[printArgCount++] = $1; $$ = $1; }
+    | CHAR_CONSTANT { printArgs[printArgCount++] = $1; $$ = $1; }
+;
+
+
 
 
 scan_arguments:
@@ -174,9 +198,14 @@ scan_formatted_text:
 ;
 
 scan_variable_list:
-    IDENTIFIER
-    | scan_variable_list COMMA IDENTIFIER
+    scan_variable
+    | scan_variable_list COMMA scan_variable
 ;
+
+scan_variable:
+    IDENTIFIER { scanArgs[scanArgCount++] = $1; $$ = $1; }
+;
+
 
 if_statement:
     IF condition block_statement optional_else

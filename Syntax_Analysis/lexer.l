@@ -9,7 +9,7 @@ DIGITS                    [0-9]+
 ID                        [a-z]([a-z0-9]*_?[a-z0-9]*)?
 INTCONST                  \([0-9]+[ \t]*,[ \t]*[0-9]*\)
 CHARCONST                 \'(\\.|[^\\\'])?\'
-IO_STRINGCONST            \(\"[^\"]*\"[^\"]*\)
+IO_STRINGCONST            \"[^\"]*\"
 WS                        [ \t\n]+
 
 
@@ -70,7 +70,7 @@ WS                        [ \t\n]+
 {IO_STRINGCONST} { yylval = strdup(yytext); return IO_STRING_CONSTANT; }
 
 
-{ID}        { return IDENTIFIER; }
+{ID}        { yylval = strdup(yytext); return IDENTIFIER; }
 
 .           { /* UNKNOWN TOKEN */ }
 
