@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "syntax.h"
 extern FILE* yyin;
 extern int yylineno;
 extern int yylex(void);
@@ -126,7 +125,6 @@ declaration_list:
 declaration:
     LEFT_ROUND_PARAN variable_name COMMA type RIGHT_ROUND_PARAN SEMI_COLON
     {   
-        addSymbol($2, $4); 
         setname($2,$4->name);
         $$=$2;
     }
@@ -243,14 +241,10 @@ block_statement:
 input_output_statement:
     PRINT LEFT_ROUND_PARAN print_arguments RIGHT_ROUND_PARAN 
     {
-        validateIO($3, printArgs, printArgCount, 0);
-        printArgCount = 0;  
         $$=$3;
     }
     | SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN
     {
-        validateIO($3, scanArgs, scanArgCount, 1);
-        scanArgCount = 0;  
         $$=$3;
     }
 ;
@@ -293,7 +287,6 @@ print_expression_list:
 print_expression_item:
     factor 
     {
-        printArgs[printArgCount++] = $1; 
         $$ = $1;
     }
 ;
