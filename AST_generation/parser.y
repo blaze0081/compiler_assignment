@@ -125,7 +125,8 @@ declaration_list:
 
 declaration:
     LEFT_ROUND_PARAN variable_name COMMA type RIGHT_ROUND_PARAN SEMI_COLON
-    {
+    {   
+        addSymbol($2, $4); 
         setname($2,$4->name);
         $$=$2;
     }
