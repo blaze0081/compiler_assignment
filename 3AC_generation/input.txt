@@ -5,7 +5,7 @@ begin VarDecl:
 (sum1, int);
 end VarDecl
 
-scan("hello: @", sum2);
+print("hello");
 sum := (10,2);
 
 end program
