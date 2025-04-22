@@ -19,5 +19,5 @@ void addchild(Node * head,Node * child);
 void setname(Node * head, char * str);
 Node* createNode();
 void initialize(Node * head);
-
+void print_generalized(Node* head, int level);
 #endif

@@ -1,11 +1,9 @@
 begin program:
 
 begin VarDecl:
-(sum, int);
-(sum1, int);
+  (sum, int);
 end VarDecl
 
-print("hello");
 sum := (10,2);
 
 end program

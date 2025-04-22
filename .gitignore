@@ -10,3 +10,4 @@ Syntax_Analysis/y.tab.h
 parser.tab.c
 .gitignore
 AST_generation/tree.txt
+temp

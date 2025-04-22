@@ -1,4 +1,5 @@
 %{
+#include "3AC.h"
 #include "parser.tab.h"
 %}
 
@@ -64,13 +65,14 @@ WS                        [ \t\n]+
 ","         { return COMMA; }
 ":"         { return COLON; }
 
-{DIGITS}    { yylval = strdup(yytext); return DIGIT; }
-{INTCONST}  { yylval = strdup(yytext); return INTEGER_CONSTANT; }
-{CHARCONST} { yylval = strdup(yytext); return CHAR_CONSTANT; }
-{IO_STRINGCONST} { yylval = strdup(yytext); return IO_STRING_CONSTANT; }
+{DIGITS}    { yylval.data.code = strdup(yytext); return DIGIT; }
+{INTCONST}  { yylval.data.code = strdup(yytext); return INTEGER_CONSTANT; }
+{CHARCONST} { yylval.data.code = strdup(yytext); return CHAR_CONSTANT; }
+{IO_STRINGCONST} { yylval.data.code = strdup(yytext); return IO_STRING_CONSTANT; }
 
 
-{ID}        { yylval = strdup(yytext); return IDENTIFIER; }
+{ID} { yylval.data.code = strdup(yytext); return IDENTIFIER; }
+
 
 .           { /* UNKNOWN TOKEN */ }
 

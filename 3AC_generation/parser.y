@@ -1,4 +1,5 @@
 %{
+#include "3AC.h"    
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,8 +9,9 @@ extern int yylineno;
 extern int yylex(void);
 extern int yydebug;
 void yyerror(const char *s);
+int n = 1;
+
 %}
-%define api.value.type {char *}
 
 /*tokens defined*/
 /*
@@ -63,11 +65,11 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %token <data> IDENTIFIER
 
 /*FILL IN THESE LATER*/
-%type <data> variable_declaration statement_list declaration_list declaration variable_name type
+%type <data> variable_declaration statement_list declaration_list declaration variable_name type statement
 %type <data> assignment_statement input_output_statement if_statement while_statement for_statement block_statement
 %type <data> variable assignment_operators expression print_arguments scan_arguments 
 %type <data> print_formatted_text print_expression_list scan_formatted_text scan_variable_list
-%type <data> optional_else condition relop inc_dec
+%type <data> optional_else condition relop inc_dec scan_variable
 %type <data> factor arithmatic_operator print_expression_item
 
 %left PLUS MINUS MULT DIV MODULO
@@ -87,8 +89,6 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %%
 
 
-
-%%
 
 /*CFG rules*/
 program:
@@ -110,7 +110,7 @@ declaration_list:
 ;
 
 declaration:
-    LEFT_ROUND_PARAN variable_name COMMA type RIGHT_ROUND_PARAN SEMI_COLON{ addSymbol($2, $4); }
+    LEFT_ROUND_PARAN variable_name COMMA type RIGHT_ROUND_PARAN SEMI_COLON{ addSymbol($2.code, $4.code); }
     | LEFT_ROUND_PARAN variable_name LEFT_SQ_PARAN DIGIT RIGHT_SQ_PARAN COMMA type RIGHT_ROUND_PARAN SEMI_COLON
 ;
 
@@ -121,7 +121,7 @@ type:
 ;
 
 variable_name:
-    IDENTIFIER
+    IDENTIFIER { $$ = $1; strcpy($$.str, $1.code); }
 ;
 
 statement_list:
@@ -141,15 +141,18 @@ statement:
 
 assignment_statement:
     variable assignment_operators expression
+    {
+        assignment_handle(&$$, $1, $2, $3,&n);
+    }
 ;
 
 assignment_operators:
-    ASSIGN_EQUALS 
-    | PLUS_EQUALS 
-    | MINUS_EQUALS 
-    | MULT_EQUALS 
-    | DIV_EQUALS 
-    | MODULO_EQUALS
+    ASSIGN_EQUALS { strcpy($$.str, ":="); }
+    | PLUS_EQUALS { strcpy($$.str, "+="); }
+    | MINUS_EQUALS { strcpy($$.str, "-="); }
+    | MULT_EQUALS { strcpy($$.str, "*="); }
+    | DIV_EQUALS { strcpy($$.str, "/="); }
+    | MODULO_EQUALS { strcpy($$.str, "%="); }
 ;
 
 block_statement:
@@ -158,11 +161,11 @@ block_statement:
 
 input_output_statement:
     PRINT LEFT_ROUND_PARAN print_arguments RIGHT_ROUND_PARAN {
-        validateIO($3, printArgs, printArgCount, 0);
+        validateIO($3.code, printArgs, printArgCount, 0);
         printArgCount = 0;  // reset for next use
     }
     | SCAN LEFT_ROUND_PARAN scan_arguments RIGHT_ROUND_PARAN {
-        validateIO($3, scanArgs, scanArgCount, 1);
+        validateIO($3.code, scanArgs, scanArgCount, 1);
         scanArgCount = 0;  // reset for next use
     }
 ;
@@ -185,7 +188,8 @@ print_expression_list:
 ;
 
 print_expression_item:
-    factor {printArgs[printArgCount++] = $1; $$ = $1;}
+    factor {printArgs[printArgCount++] = $1.code; 
+    $$ = $1;}
 ;
 
 
@@ -204,7 +208,8 @@ scan_variable_list:
 ;
 
 scan_variable:
-    IDENTIFIER { scanArgs[scanArgCount++] = $1; $$ = $1; }
+    IDENTIFIER { scanArgs[scanArgCount++] = $1.code; 
+    $$ = $1; }
 ;
 
 
@@ -247,7 +252,7 @@ inc_dec:
 ;
 
 expression:
-    factor
+    factor  { strcpy($$.str,$1.str); $$.code=$1.code;}
     | factor arithmatic_operator factor
 ;
 
@@ -260,17 +265,20 @@ arithmatic_operator:
 ;
 
 factor:
-    variable
-    | INTEGER_CONSTANT{
-        validateIntConstant($1);
+    variable { $$ = $1; }
+    |  INTEGER_CONSTANT {
+       $$ = $1;
+       strcpy($$.str, $1.code);
+       $$.code = NULL;  
+       validateIntConstant($1.code);
     }
-    | CHAR_CONSTANT
-    | LEFT_ROUND_PARAN expression RIGHT_ROUND_PARAN
+    | CHAR_CONSTANT { $$ = $1; strcpy($$.str, $1.code); }
+    | LEFT_ROUND_PARAN expression RIGHT_ROUND_PARAN { $$ = $2; }
 ;
 
 
 variable:
-    variable_name
+    variable_name   { $$ = $1; strcpy($$.str, $1.str); }
     | variable_name LEFT_SQ_PARAN expression RIGHT_SQ_PARAN
 ;
 

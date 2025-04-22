@@ -43,3 +43,24 @@ void setname(Node * head, char * str)
 {
     strcpy(head->name,str);
 }
+void print_generalized(Node* head, int level) {
+    if (head == NULL) return;
+
+    for (int i = 0; i < level; i++) printf("  "); // indent
+    printf("(");
+    printf("%s", head->name);
+
+    if (head->n == 0) {
+        printf(")\n");
+        return;
+    }
+
+    printf("\n");
+    for (int i = 0; i < head->n; i++) {
+        print_generalized(head->children[i], level + 1);
+    }
+
+    for (int i = 0; i < level; i++) printf("  ");
+    printf(")\n");
+}
+

@@ -57,10 +57,10 @@ void array_handle(struct data* lhs, struct data rhs1, struct data rhs2, int* n){
     lhs->code = result;
     free(st);
 }
-void assignment_handle(struct data* lhs, struct data rhs1, struct data rhs2, int* n) {
-    char *st = calloc(50, sizeof(char));
+void assignment_handle(struct data* lhs, struct data rhs1, struct data sign, struct data rhs2, int* n) {
+    char *st = calloc(100, sizeof(char));
     strcat(st, rhs1.str);
-    strcat(st, "=");
+    strcat(st, sign.str);
     strcat(st, rhs2.str);
     strcat(st, "\n");
     int len2 = (rhs2.code != NULL) ? strlen(rhs2.code) : 0;
@@ -97,7 +97,7 @@ void conditional_handle(struct data* lhs, struct data rhs1, struct data rhs2,int
 {
     char *truel=newLabel();
     char *endl=newLabel();
-    char *st = calloc(200, sizeof(char));
+    char *st = calloc(500, sizeof(char));
     sprintf(lhs->str, "t%d", *n);
     sprintf(st,"if(%s %s %s) goto %s\nt%d=FALSE \ngoto %s\n%s:\nt%d = TRUE \n%s:\n",
     rhs1.str,s,rhs2.str,truel,(*n),endl,truel,(*n),endl);
@@ -117,7 +117,7 @@ void conditional_handle_not(struct data* lhs, struct data rhs1,int* n)
 {
     char *truel=newLabel();
     char *endl=newLabel();
-    char *st = calloc(200, sizeof(char));
+    char *st = calloc(500, sizeof(char));
     sprintf(lhs->str, "t%d", *n);
     sprintf(st,"if(!%s) goto %s\nt%d=FALSE \ngoto %s\n%s:\nt%d = TRUE \n%s:\n",
     rhs1.str,truel,(*n),endl,truel,(*n),endl);
@@ -235,7 +235,7 @@ void for_downto(struct data* lhs,struct data rhs1,struct data rhs2,struct data r
 void read_handle(struct data* lhs,struct data rhs)
 {
     int len= (rhs.code != NULL) ? strlen(rhs.code) : 0;
-    char *st=calloc(200,sizeof(char));
+    char *st=calloc(500,sizeof(char));
     sprintf(st,"read(%s)\n",rhs.str);
     char *result=calloc(200+len,sizeof(char));
     if (rhs.code != NULL)

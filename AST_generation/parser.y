@@ -96,7 +96,9 @@ program:
         addchild($$,$5);
         myhead=$$;
         dfs(myhead);
-        printf("Valid Program\n");
+        print_generalized(myhead, 0);  
+        printf("\nuse python tree.py to print the AST\n");
+
         YYACCEPT;
     }
 ;

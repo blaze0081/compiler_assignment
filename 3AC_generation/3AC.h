@@ -13,16 +13,16 @@ struct data {
 };
 
 // Declare the function prototype for 'arithematic_comp'.
-void arithematic_comp(struct data1* lhs, struct data1 rhs1, struct data1 rhs2, int* n,char *s);
-void array_handle(struct data1* lhs, struct data1 rhs1, struct data1 rhs2, int* n);
-void assignment_handle(struct data1* lhs, struct data1 rhs1, struct data1 rhs2, int* n) ;
-void conditional_handle(struct data1* lhs, struct data1 rhs1, struct data1 rhs2,int* n, char*s);
-void conditional_handle_not(struct data1* lhs, struct data1 rhs1,int* n);
-void handle_rec_st(struct data1* lhs,struct data1 rhs1,struct data1 rhs2);
-void conditional_if(struct data1* lhs,struct data1 rhs1,struct data1 rhs2);
-void conditional_if_else(struct data1* lhs,struct data1 rhs1,struct data1 rhs2,struct data1 rhs3);
-void while_handler (struct data1* lhs,struct data1 rhs1,struct data1 rhs2);
-void for_to(struct data1* lhs,struct data1 rhs1,struct data1 rhs2,struct data1 rhs3,struct data1 rhs4);
-void for_downto(struct data1* lhs,struct data1 rhs1,struct data1 rhs2,struct data1 rhs3,struct data1 rhs4);
-void read_handle(struct data1* lhs,struct data1 rhs);
+void arithematic_comp(struct data* lhs, struct data rhs1, struct data rhs2, int* n,char *s);
+void array_handle(struct data* lhs, struct data rhs1, struct data rhs2, int* n);
+void assignment_handle(struct data* lhs, struct data rhs1, struct data sign, struct data rhs2, int* n);
+void conditional_handle(struct data* lhs, struct data rhs1, struct data rhs2,int* n, char*s);
+void conditional_handle_not(struct data* lhs, struct data rhs1,int* n);
+void handle_rec_st(struct data* lhs,struct data rhs1,struct data rhs2);
+void conditional_if(struct data* lhs,struct data rhs1,struct data rhs2);
+void conditional_if_else(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3);
+void while_handler (struct data* lhs,struct data rhs1,struct data rhs2);
+void for_to(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4);
+void for_downto(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4);
+void read_handle(struct data* lhs,struct data rhs);
 #endif 
