@@ -194,31 +194,81 @@ strcat(result, thenBlk.code);
 // 6) end‐label
 {
 char buf[100];
-sprintf(buf, "%s:\n", Lend);
+snprintf(buf, sizeof(buf), "%s:\n", Lend);
 strcat(result, buf);
 }
 
 lhs->code = result;
 }
 
-void conditional_if_else(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3)
+void conditional_if_else(struct data* lhs,
+                         struct data cond,
+                         struct data thenBlk,
+                         struct data elseBlk)
 {
-    int len1 = (rhs1.code != NULL) ? strlen(rhs1.code) : 0;
-    int len2 = (rhs2.code != NULL) ? strlen(rhs2.code) : 0;
-    int len3 = (rhs3.code != NULL) ? strlen(rhs3.code) : 0;
-    char *truel=newLabel();
-    char *endl=newLabel();
-    char *st = calloc(200+len3+len2, sizeof(char));
-    sprintf(st,"if(%s) goto %s\n%sgoto %s\n%s:\n%s%s:\n",
-    rhs1.str,truel,rhs3.code,endl,truel,rhs2.code,endl);  
-    char *result = calloc(len1 + strlen(st) + 1, sizeof(char));
-    if (rhs1.code != NULL)
-        strcat(result, rhs1.code);
-    strcat(result, st);
+    /* compute prefix lengths */
+    int Lc = cond.code   ? strlen(cond.code)   : 0;
+    int Lt = thenBlk.code? strlen(thenBlk.code): 0;
+    int Le = elseBlk.code? strlen(elseBlk.code): 0;
+
+    /* fresh labels */
+    char *Ltrue = newLabel();  // e.g. "L0"
+    char *Lend  = newLabel();  // e.g. "L1"
+
+    /* big enough buffer for all parts + safety margin */
+    char *result = calloc(Lc + Lt + Le + 200, 1);
+
+    /* 1) any code to compute the condition */
+    if (cond.code)
+        strcat(result, cond.code);
+
+    /* 2) if(cond) goto Ltrue */
+    {
+      char buf[128];
+      snprintf(buf, sizeof(buf),
+               "if(%s) goto %s\n",
+               cond.str, Ltrue);
+      strcat(result, buf);
+    }
+
+    /* 3) else‐branch code */
+    if (elseBlk.code)
+        strcat(result, elseBlk.code);
+
+    /* 4) jump past the then‐branch */
+    {
+      char buf[64];
+      snprintf(buf, sizeof(buf),
+               "goto %s\n",
+               Lend);
+      strcat(result, buf);
+    }
+
+    /* 5) then‐branch label */
+    {
+      char buf[64];
+      snprintf(buf, sizeof(buf),
+               "%s:\n",
+               Ltrue);
+      strcat(result, buf);
+    }
+
+    /* 6) then‐branch code */
+    if (thenBlk.code)
+        strcat(result, thenBlk.code);
+
+    /* 7) end label */
+    {
+      char buf[64];
+      snprintf(buf, sizeof(buf),
+               "%s:\n",
+               Lend);
+      strcat(result, buf);
+    }
+
     lhs->code = result;
-    free(st);
 }
-void while_handler (struct data* lhs,struct data rhs1,struct data rhs2)
+    void while_handler (struct data* lhs,struct data rhs1,struct data rhs2)
 {
     int len1 = (rhs1.code != NULL) ? strlen(rhs1.code) : 0;
     int len2 = (rhs2.code != NULL) ? strlen(rhs2.code) : 0;
@@ -258,7 +308,7 @@ void for_to(struct data* lhs,
 
     // 3) emit the loop itself
     char st[512];
-    sprintf(st, sizeof(st),
+    snprintf(st, sizeof(st),
     "%s := %s\n"              // i := start
     "%s:\n"                //  Lx:
     "if(%s>%s) goto %s\n"  //  if i>limit goto Ly

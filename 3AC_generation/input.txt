@@ -1,10 +1,17 @@
 begin program:
 begin VarDecl:
 (x, int);
+(y, int);
 end VarDecl
 x := (1, 10);
 if (x > (0, 10))
 begin
 x := (2, 10); 
+end
+else
+begin
+x += (3, 10);
+x := (3, 10) + y + (5, 8) ; 
+print("hello @", hi);
 end;
 end program

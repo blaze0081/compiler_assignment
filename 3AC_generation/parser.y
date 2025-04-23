@@ -307,7 +307,7 @@ inc_dec:
 
 expression:
     factor  { $$ = $1; }
-  | factor arithmatic_operator factor
+  | expression arithmatic_operator factor
         { arithematic_comp(&$$, $1, $3, &n, $2.str); }
 ;
 
