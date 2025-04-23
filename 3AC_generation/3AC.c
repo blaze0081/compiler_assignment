@@ -141,21 +141,60 @@ void handle_rec_st(struct data* lhs,struct data rhs1,struct data rhs2)
         strcat(result, rhs2.code);
     lhs->code = result;
 }
-void conditional_if(struct data* lhs,struct data rhs1,struct data rhs2)
+void conditional_if(struct data* lhs,
+    struct data cond,
+    struct data thenBlk)
 {
-    int len1 = (rhs1.code != NULL) ? strlen(rhs1.code) : 0;
-    int len2 = (rhs2.code != NULL) ? strlen(rhs2.code) : 0;
-    char *endl=newLabel();
-    char *st = calloc(200+len2, sizeof(char));
-    sprintf(st,"if(!%s) goto %s\n%s%s:\n",
-    rhs1.str,endl,rhs2.code,endl);   
-    char *result = calloc(len1 + strlen(st) + 1, sizeof(char));
-    if (rhs1.code != NULL)
-        strcat(result, rhs1.code);
-    strcat(result, st);
-    lhs->code = result;
-    free(st);
+// compute lengths of any code prefixes
+int lenCond = cond.code   ? strlen(cond.code)   : 0;
+int lenThen = thenBlk.code? strlen(thenBlk.code): 0;
+
+// fresh labels
+char *Ltrue = newLabel();   // e.g. "L0"
+char *Lend  = newLabel();   // e.g. "L1"
+
+// allocate result buffer
+char *result = calloc(lenCond + lenThen + 200, sizeof(char));
+
+// 1) prepend any code needed to compute the condition
+if (cond.code)
+strcat(result, cond.code);
+
+// 2) if(cond) goto Ltrue
+{
+char buf[256];
+sprintf(buf, sizeof(buf), "if(%s) goto %s\n", cond.str, Ltrue);
+strcat(result, buf);
 }
+
+// 3) else fall through: jump to Lend
+{
+char buf[100];
+sprintf(buf, "goto %s\n", Lend);
+strcat(result, buf);
+}
+
+// 4) true‐branch label
+{
+char buf[100];
+sprintf(buf, "%s:\n", Ltrue);
+strcat(result, buf);
+}
+
+// 5) then‐block’s code
+if (thenBlk.code)
+strcat(result, thenBlk.code);
+
+// 6) end‐label
+{
+char buf[100];
+sprintf(buf, "%s:\n", Lend);
+strcat(result, buf);
+}
+
+lhs->code = result;
+}
+
 void conditional_if_else(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3)
 {
     int len1 = (rhs1.code != NULL) ? strlen(rhs1.code) : 0;
@@ -188,27 +227,48 @@ void while_handler (struct data* lhs,struct data rhs1,struct data rhs2)
     beginl,rhs1.str,endl,rhs2.code,beginl,endl);
     lhs->code = st;
 }
-void for_to(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4)
+void for_to(struct data* lhs,
+    struct data rhs1,
+    struct data rhs2,
+    struct data rhs3,
+    struct data rhs4,    /* this is the “expression” whose code you may still want,
+                             but NOT the inc/dec token itself */
+    char *inc_op)
 {
-    char *beginl=newLabel();
-    char *endl=newLabel();
-    int len1 = (rhs1.code != NULL) ? strlen(rhs1.code) : 0;
-    int len2 = (rhs2.code != NULL) ? strlen(rhs2.code) : 0;
-    int len3 = (rhs3.code != NULL) ? strlen(rhs3.code) : 0;
-    int len4 = (rhs4.code != NULL) ? strlen(rhs4.code) : 0;
-    char *result=calloc(200+len2+len1+len3, sizeof(char));
-    if (rhs1.code != NULL)
-        strcat(result, rhs1.code);
-    if (rhs2.code != NULL)
-        strcat(result, rhs2.code);
-    if (rhs3.code != NULL)
-        strcat(result, rhs3.code);
-    char *st=calloc(200+len4, sizeof(char));
-    sprintf(st,"%s=%s\n%s:\nif(%s>%s) goto %s\n%s%s++\ngoto %s\n%s:\n",
-    rhs1.str,rhs2.str,beginl,rhs1.str,rhs3.str,endl,rhs4.code,rhs1.str,beginl,endl); 
-    strcat(result,st);
-    lhs->code=result;
-    free(st);
+    char *beginl = newLabel();
+    char *endl   = newLabel();
+    int len1 = rhs1.code ? strlen(rhs1.code) : 0;
+    int len2 = rhs2.code ? strlen(rhs2.code) : 0;
+    int len3 = rhs3.code ? strlen(rhs3.code) : 0;
+
+    // 1) gather init-and-condition code
+    char *result = calloc(len1 + len2 + len3 + 200, 1);
+    if (rhs1.code) strcat(result, rhs1.code);
+    if (rhs2.code) strcat(result, rhs2.code);
+    if (rhs3.code) strcat(result, rhs3.code);
+
+    // 2) choose the right operator
+    const char *op = strcmp(inc_op, "inc") == 0 ? "++" : "--";
+
+    // 3) emit the loop itself
+    char st[512];
+    sprintf(st, sizeof(st),
+    "%s := %s\n"              // i := start
+    "%s:\n"                //  Lx:
+    "if(%s>%s) goto %s\n"  //  if i>limit goto Ly
+    "%s%s\n"               //    i++  (or i--)
+    "goto %s\n"            //    goto Lx
+    "%s:\n",               //  Ly:
+    rhs1.str, rhs2.str,
+    beginl,
+    rhs1.str, rhs3.str, endl,
+    rhs1.str, op,
+    beginl,
+    endl
+    );
+
+    strcat(result, st);
+    lhs->code = result;
 }
 void for_downto(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4)
 {
