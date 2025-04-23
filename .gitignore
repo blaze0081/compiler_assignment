@@ -11,3 +11,4 @@ parser.tab.c
 .gitignore
 AST_generation/tree.txt
 temp
+parser

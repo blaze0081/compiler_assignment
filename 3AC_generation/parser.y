@@ -91,7 +91,12 @@ int n = 1;
 /* Program entry */
 program:
     T_BEGIN PROGRAM COLON variable_declaration statement_list END PROGRAM
-    { printf("%s", $5.code); YYACCEPT; }
+    {
+      /* never pass NULL into printf */
+      char *out = $5.code ? $5.code : "";
+      printf("%s", out);
+      YYACCEPT;
+    }
 ;
 
 /* Declarations */
@@ -242,17 +247,17 @@ optional_else:
 condition:
   variable relop expression
   {
-    /* carry the LHS into $$ */
+    /* start with LHS */
     $$ = $1;
-    /* build the test string "x > (0,10)" */
+    /* build “x > (0,10)” */
     snprintf($$.str, sizeof($$.str), "%s %s %s",
              $1.str, $2.str, $3.str);
 
-    /* prefix any real code from the two sides */
+    /* prefix any temp‐code from $1 or $3 */
     int L = $1.code ? strlen($1.code) : 0;
     int R = $3.code ? strlen($3.code) : 0;
     if (L+R > 0) {
-      char *c = calloc(L+R+1,1);
+      char *c = calloc(L+R+1, 1);
       if ($1.code) memcpy(c,       $1.code, L);
       if ($3.code) memcpy(c + L,   $3.code, R);
       $$.code = c;
@@ -263,9 +268,10 @@ condition:
 | variable
   {
     $$ = $1;
-    $$.code = NULL;     /* no code for a bare var */
+    $$.code = NULL;   /* bare var has no sub-code */
   }
 ;
+
 
 
 relop:

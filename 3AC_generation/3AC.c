@@ -162,22 +162,28 @@ strcat(result, cond.code);
 
 // 2) if(cond) goto Ltrue
 {
-char buf[256];
-sprintf(buf, sizeof(buf), "if(%s) goto %s\n", cond.str, Ltrue);
-strcat(result, buf);
+  char buf[128];
+  /* safe‐print, never more than 127 chars + \0 */
+  snprintf(buf, sizeof(buf),
+           "if(%s) goto %s\n",
+           cond.str, Ltrue);
+  strcat(result, buf);
 }
 
 // 3) else fall through: jump to Lend
 {
-char buf[100];
-sprintf(buf, "goto %s\n", Lend);
-strcat(result, buf);
+  char buf[64];
+  snprintf(buf, sizeof(buf),
+           "goto %s\n",
+           Lend);
+  strcat(result, buf);
 }
 
 // 4) true‐branch label
 {
-char buf[100];
-sprintf(buf, "%s:\n", Ltrue);
+char buf[64];
+snprintf(buf, sizeof(buf),
+"%s:\n", Ltrue);
 strcat(result, buf);
 }
 

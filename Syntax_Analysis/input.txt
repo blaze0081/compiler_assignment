@@ -1,11 +1,12 @@
 begin program:
-
 begin VarDecl:
 (sum, int);
-(sum1, int);
+(number, int);
 end VarDecl
-
-scan("hello: @", sum2);
-sum := (10,2);
-
+i := (5, 10);
+while (number > (0, 10)) do
+begin
+sum := sum + number;
+number := number - (1, 10);
+end;
 end program
