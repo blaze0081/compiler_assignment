@@ -291,12 +291,28 @@ while_statement:
 for_statement:
     FOR variable ASSIGN_EQUALS expression TO expression inc_dec expression DO block_statement
     {
-        for_to(&$$, $2, $4, $6, $8, $7.str);
+        for_to(&$$, $2, $4, $6, $8, $7.str, $9);
     }
     | FOR variable ASSIGN_EQUALS expression TO variable arithmatic_operator expression inc_dec expression DO block_statement
     {
-        
+        struct data boundTemp;
+        /* tN = var op expr */
+        arithematic_comp(&boundTemp,
+                         $6,        /* the variable */
+                         $8,        /* the RHS expression */
+                         &n,
+                         $7.str    /* the op (“+”, “-”, etc.) */);
+        for_to(&$$,
+               $2,            /* loop‐var */
+               $4,            /* start‐expr */
+               boundTemp,     /* our temp bound */
+               $10,           /* step‐expr */
+               $9.str,        /* “inc”/“dec” */
+               $12            /* bodyBlock.code */
+        );
     }
+
+
 ;
 
 

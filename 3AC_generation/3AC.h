@@ -22,7 +22,14 @@ void handle_rec_st(struct data* lhs,struct data rhs1,struct data rhs2);
 void conditional_if(struct data* lhs,struct data rhs1,struct data rhs2);
 void conditional_if_else(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3);
 void while_handler (struct data* lhs,struct data rhs1,struct data rhs2);
-void for_to(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4,char* inc_op);
+void for_to(struct data*    lhs,
+                struct data     initVar,
+                struct data     startExpr,
+                struct data     boundExpr,
+                struct data     stepExpr,
+                char*           inc_op,
+                struct data     bodyBlock);
+    
 void for_downto(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4);
 void read_handle(struct data* lhs,struct data rhs);
 #endif 

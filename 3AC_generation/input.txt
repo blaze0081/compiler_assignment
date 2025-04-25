@@ -1,17 +1,28 @@
+
 begin program:
 begin VarDecl:
-(x, int);
-(y, int);
+(number, int);
+(sum, int);
+(a, int);
+(b, int);
+(arr[6], char);
 end VarDecl
-x := (1, 10);
-if (x > (0, 10))
+
+number := (3, 10);
+sum := (0, 10);
+
+while (number > (0, 10)) do
 begin
-x := (2, 10); 
-end
-else
-begin
-x += (3, 10);
-x := (3, 10) + y + (5, 8) ; 
-print("hello @", hi);
+    sum := sum + number;
+    number := number - (1, 10);
 end;
+
+b := (20, 10);
+
+for a := (10, 8) to b + (10, 2) inc (1, 10) do
+begin
+    a := a + (1, 2) * a;
+    b := b + a + (1, 2); 
+end;
+
 end program

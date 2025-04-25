@@ -283,49 +283,81 @@ void conditional_if_else(struct data* lhs,
     beginl,rhs1.str,endl,rhs2.code,beginl,endl);
     lhs->code = st;
 }
-void for_to(struct data* lhs,
-    struct data rhs1,
-    struct data rhs2,
-    struct data rhs3,
-    struct data rhs4,    /* this is the “expression” whose code you may still want,
-                             but NOT the inc/dec token itself */
-    char *inc_op)
+
+void for_to(struct data*    lhs,
+    struct data     initVar,
+    struct data     startExpr,
+    struct data     boundExpr,
+    struct data     stepExpr,
+    char *          inc_op,
+    struct data     bodyBlock)
 {
-    char *beginl = newLabel();
-    char *endl   = newLabel();
-    int len1 = rhs1.code ? strlen(rhs1.code) : 0;
-    int len2 = rhs2.code ? strlen(rhs2.code) : 0;
-    int len3 = rhs3.code ? strlen(rhs3.code) : 0;
+// 1) fresh labels
+char *L0 = newLabel();  // loop head
+char *L1 = newLabel();  // body entry
+char *L2 = newLabel();  // exit
 
-    // 1) gather init-and-condition code
-    char *result = calloc(len1 + len2 + len3 + 200, 1);
-    if (rhs1.code) strcat(result, rhs1.code);
-    if (rhs2.code) strcat(result, rhs2.code);
-    if (rhs3.code) strcat(result, rhs3.code);
+// 2) estimate & allocate
+int lenB    = boundExpr.code   ? strlen(boundExpr.code)   : 0;
+int lenBody = bodyBlock.code   ? strlen(bodyBlock.code)   : 0;
+char *result = calloc(lenB + lenBody + 256, 1);
+char buf[256];
 
-    // 2) choose the right operator
-    const char *op = strcmp(inc_op, "inc") == 0 ? "++" : "--";
+// 3) init: a := start
+snprintf(buf, sizeof(buf), "%s := %s\n",
+     initVar.str, startExpr.str);
+strcat(result, buf);
 
-    // 3) emit the loop itself
-    char st[512];
-    snprintf(st, sizeof(st),
-    "%s := %s\n"              // i := start
-    "%s:\n"                //  Lx:
-    "if(%s>%s) goto %s\n"  //  if i>limit goto Ly
-    "%s%s\n"               //    i++  (or i--)
-    "goto %s\n"            //    goto Lx
-    "%s:\n",               //  Ly:
-    rhs1.str, rhs2.str,
-    beginl,
-    rhs1.str, rhs3.str, endl,
-    rhs1.str, op,
-    beginl,
-    endl
-    );
+// 4) L0:
+snprintf(buf, sizeof(buf), "%s:\n", L0);
+strcat(result, buf);
 
-    strcat(result, st);
-    lhs->code = result;
+// 5) bound‐temp code (if any)
+if (boundExpr.code) {
+strcat(result, boundExpr.code);
 }
+
+// 6) test: if(a > bound) goto L1
+snprintf(buf, sizeof(buf), "if(%s > %s) goto %s\n",
+     initVar.str, boundExpr.str, L1);
+strcat(result, buf);
+
+// 7) fall‐through to exit
+snprintf(buf, sizeof(buf), "goto %s\n", L2);
+strcat(result, buf);
+
+// 8) L1:
+snprintf(buf, sizeof(buf), "%s:\n", L1);
+strcat(result, buf);
+
+// 9) **loop body**
+if (bodyBlock.code) {
+strcat(result, bodyBlock.code);
+}
+
+// 10) update: a := a ± step
+if (strcmp(inc_op, "inc") == 0) {
+snprintf(buf, sizeof(buf), "%s := %s + %s\n",
+         initVar.str, initVar.str, stepExpr.str);
+} else {
+snprintf(buf, sizeof(buf), "%s := %s - %s\n",
+         initVar.str, initVar.str, stepExpr.str);
+}
+strcat(result, buf);
+
+// 11) back-edge
+snprintf(buf, sizeof(buf), "goto %s\n", L0);
+strcat(result, buf);
+
+// 12) exit label: L2
+snprintf(buf, sizeof(buf), "%s\n", L2);
+strcat(result, buf);
+
+lhs->code = result;
+}
+
+
+
 void for_downto(struct data* lhs,struct data rhs1,struct data rhs2,struct data rhs3,struct data rhs4)
 {
     char *beginl=newLabel();
