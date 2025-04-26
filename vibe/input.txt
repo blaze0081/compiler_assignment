@@ -1,0 +1,8 @@
+begin program:
+begin VarDecl:
+(sum, int);
+(number, int);
+end VarDecl
+sum := (10, 10) + (10, 2);
+
+end program

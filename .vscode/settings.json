@@ -3,6 +3,7 @@
         "string.h": "c",
         "functional": "c",
         "chrono": "c",
-        "__locale": "c"
+        "__locale": "c",
+        "numbers": "c"
     }
 }
