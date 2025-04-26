@@ -409,7 +409,7 @@ relop:
 ;
 
 while_statement:
-    WHILE LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN block_statement
+    WHILE LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN DO block_statement
     {
          $$=createNode();
         setname($$,"WHILE");
