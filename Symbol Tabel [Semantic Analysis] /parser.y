@@ -574,19 +574,34 @@ void free_ast(Node* root);
  * Entry point: first child is var‐decl, second is statement list  
  */
 void interpret_program(Node* root, SymbolTable* table) {
-    /* 1) insert all declared variables */
+    /* 1) insert all declared variables (and arrays) */
     Node* vars  = root->children[0];
     for (int i = 0; i < vars->n; i++) {
         Node* v = vars->children[i];
-        const char* type = v->name;               /* "int" or "char" */
-        const char* name = v->children[0]->name;  /* identifier */
-        insert_symbol(table, name,
-            strcmp(type,"int")==0 ? TYPE_INT : TYPE_CHAR
-        );
+        if (strcmp(v->name, "Array_Declaration") == 0) {
+            // children: [0]=variable_name, [1]=size, [2]=type]
+            Node* varNode  = v->children[0];
+            const char* name = varNode->children[0]->name;
+            int size       = v->children[1]->ival;
+            const char* baseType = v->children[2]->name;
+            insert_array_symbol(table, name,
+                strcmp(baseType, "int") == 0 ? TYPE_INT : TYPE_CHAR,
+                size
+            );
+        } else {
+            // simple scalar
+            const char* type = v->name;              // "int" or "char"
+            const char* name = v->children[0]->name; // identifier
+            insert_symbol(table, name,
+                strcmp(type, "int") == 0 ? TYPE_INT : TYPE_CHAR
+            );
+        }
     }
+
     /* 2) execute all statements */
     execute_statements(root->children[1], table);
 }
+
 
 /* execute a sequence of statements */
 void execute_statements(Node* stmts, SymbolTable* table) {

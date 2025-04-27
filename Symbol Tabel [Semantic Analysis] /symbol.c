@@ -35,12 +35,34 @@ void insert_symbol(SymbolTable* table, const char* name, VarType type) {
     strncpy(s->name, name, sizeof(s->name)-1);
     s->name[sizeof(s->name)-1] = '\0';
     s->type           = type;
+    s->is_array       = false;      // ← mark as scalar
+    s->array_size     = 0;    
     s->int_val        = 0;
     s->char_val       = '\0';
     s->is_initialized = true;
     s->next           = table->head;
     table->head       = s;
 }
+
+void insert_array_symbol(SymbolTable* table, const char* name, VarType type, int array_size) {
+        if ( lookup_symbol(table, name) ) {
+            fprintf(stderr, "Semantic Error: Variable '%s' already declared\n", name);
+            exit(1);
+        }
+        Symbol* s = malloc(sizeof(Symbol));
+        strncpy(s->name, name, sizeof(s->name)-1);
+        s->name[sizeof(s->name)-1] = '\0';
+        s->type           = type;
+        s->is_array       = true;
+        s->array_size     = array_size;
+        // arrays start uninitialized
+        s->int_val        = 0;
+        s->char_val       = '\0';
+        s->is_initialized = false;
+        s->next           = table->head;
+        table->head       = s;
+    }
+    
 
 void set_symbol_int(SymbolTable* table, const char* name, int value) {
     Symbol* s = lookup_symbol(table, name);
@@ -78,8 +100,12 @@ void print_symbol_table(SymbolTable* table) {
     for (Symbol* s = table->head; s; s = s->next) {
         int len = strlen(s->name);
         if (len > name_w) name_w = len;
-        const char* t = (s->type == TYPE_INT ? "int" : "char");
-        if ((len = strlen(t)) > type_w) type_w = len;
+        // const char* t = (s->type == TYPE_INT ? "int" : "char");
+        // if ((len = strlen(t)) > type_w) type_w = len;
+        const char* base = (s->type == TYPE_INT ? "int" : "char");
+        int tlen = strlen(base) + (s->is_array ? strlen("-array") : 0);
+        if (tlen > type_w) type_w = tlen;
+
         char buf[64];
         if (s->type == TYPE_INT) {
             if (s->is_initialized) snprintf(buf, sizeof buf, "%d", s->int_val);
@@ -120,6 +146,11 @@ void print_symbol_table(SymbolTable* table) {
     // 7) Each symbol
     for (Symbol* s = table->head; s; s = s->next) {
         char val_buf[64];
+        const char* base = (s->type == TYPE_INT ? "int" : "char");
+        char type_buf[16];
+        if (s->is_array) snprintf(type_buf, sizeof type_buf, "%s-array", base);
+        else             snprintf(type_buf, sizeof type_buf, "%s", base);
+
         if (s->type == TYPE_INT) {
             if (s->is_initialized) snprintf(val_buf, sizeof val_buf, "%d", s->int_val);
             else                    snprintf(val_buf, sizeof val_buf, "uninit");
@@ -129,7 +160,7 @@ void print_symbol_table(SymbolTable* table) {
         }
         printf("| %-*s | %-*s | %-*s |\n",
                name_w,  s->name,
-               type_w,  (s->type == TYPE_INT ? "int" : "char"),
+               type_w,  type_buf,
                value_w, val_buf);
     }
 
