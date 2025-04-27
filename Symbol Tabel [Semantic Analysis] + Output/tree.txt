@@ -1,0 +1,1 @@
+[PROGRAM[Variable_Declaration[int[a]][int[b]]][STATEMENTS[:=[[b]][INTCONST[(20, 10)]]][FOR[[a]][INTCONST[(10, 8)]][inc[+[[b]][INTCONST[(10, 2)]]][INTCONST[(1, 10)]]][Block[STATEMENTS[:=[[a]][+[[a]][INTCONST[(1, 2)]]]]]]]]]

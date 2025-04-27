@@ -1,42 +1,34 @@
-#ifndef SYMBOLTABLE_H
-#define SYMBOLTABLE_H
+#ifndef SYMBOL_H
+#define SYMBOL_H
 
 #include <stdbool.h>
-typedef enum {
-    TY_INT,    // integer
-    TY_CHAR,   // char
-}Type1;
 
-// Enumeration for the types supported in Pascal
+typedef enum { TYPE_INT, TYPE_CHAR } VarType;
 
-// Entry structure to hold information about identifiers
-typedef struct entry {
-    char *id;             // Identifier name
-    Type1 type;           // Type1 of the identifier
-    bool isSet;           // has been assigned?
-    int value;
-} entry;
+typedef struct Symbol {
+    char        name[32];
+    VarType     type;
+    int         int_val;
+    char        char_val;
+    bool        is_initialized;
+    struct Symbol* next;
+} Symbol;
 
-// Symbol table structure
-typedef struct table {
-    entry *entries[100];   // Fixed-size array of pointers to entries
-    int numEntries;        // Number of entries in the table
-} table;
+typedef struct {
+    Symbol* head;
+} SymbolTable;
 
-// Function prototypes
-void setEntryValue(table *t, char *id, int val, int op);
-table *createTable();
-int getEntryValue(table *t, char *id);
-entry *createEntry(char *id, int type);
-bool insertEntry(table *t, char *id, int type);
-bool searchEntry(table *t, char *id);
-int getEntryType(table *t, char *id);
-void checkEntry(table *t, char *id);
-void setEntry(table *t, char *id);
-void checkSet(table *t, char *id);
-unsigned int hash(char *str);
-table *changeScope(table *cur);
-void chainTable(table *parent, table *child);
+// Create/destroy
+SymbolTable*   create_symbol_table();
+void           destroy_symbol_table(SymbolTable* table);
 
+// Manipulate
+void           insert_symbol(SymbolTable* table, const char* name, VarType type);
+Symbol*        lookup_symbol(SymbolTable* table, const char* name);
+void           set_symbol_int(SymbolTable* table, const char* name, int value);
+void           set_symbol_char(SymbolTable* table, const char* name, char value);
 
-#endif // SYMBOLTABLE_H
+// Dump
+void           print_symbol_table(SymbolTable* table);
+
+#endif /* SYMBOL_H */

@@ -1,15 +1,13 @@
 begin program:
 begin VarDecl:
-(x, int);
+(a, int);
+(b, int);
 end VarDecl
-x := (2, 10);
-if (x < (0, 10))
+
+b := (20, 10);
+for a := (10, 8) to b + (10, 2) inc (1, 10) do
 begin
-x := (4, 10);
-end
-else
-begin
-x += (3, 10);
+    a := a + (1, 2);
 end;
 
 end program

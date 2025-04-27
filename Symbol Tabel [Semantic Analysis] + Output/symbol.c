@@ -1,188 +1,89 @@
-#include "symbol.h" 
-#include <stdio.h>
+#include "symbol.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <assert.h>
-#include <stdbool.h>
-#include "parser.tab.h"
 
+SymbolTable* create_symbol_table() {
+    SymbolTable* t = malloc(sizeof(SymbolTable));
+    t->head = NULL;
+    return t;
+}
 
-// typedef enum {
-//     TY_INT,    // integer
-//     TY_REAL,  // real
-//     TY_CHAR,   // char
-//     TY_BOOL   // boolean
-// } Type;
+void destroy_symbol_table(SymbolTable* table) {
+    Symbol* cur = table->head;
+    while (cur) {
+        Symbol* tmp = cur->next;
+        free(cur);
+        cur = tmp;
+    }
+    free(table);
+}
 
-// typedef struct entry {
-//     char *id;
-//     Type type;
-//     bool isfunc;
-//     struct entry *next;  // For handling collisions or chaining in the future
-// } entry;
+Symbol* lookup_symbol(SymbolTable* table, const char* name) {
+    for (Symbol* s = table->head; s; s = s->next) {
+        if (strcmp(s->name, name) == 0) return s;
+    }
+    return NULL;
+}
 
-// typedef struct table {
-//     struct table *parent;
-//     entry *entries[100];  // Simple fixed size for demonstration
-//     int numEntries;
-// } table;
-
-table *createTable() {
-    table *newTable = malloc(sizeof(table));
-    if (!newTable) {
-        fprintf(stderr, "Memory allocation failed for symbol table.\n");
+void insert_symbol(SymbolTable* table, const char* name, VarType type) {
+    if ( lookup_symbol(table, name) ) {
+        fprintf(stderr, "Semantic Error: Variable '%s' already declared\n", name);
         exit(1);
     }
-    newTable->numEntries = 0;
-    memset(newTable->entries, 0, sizeof(newTable->entries));
-    return newTable;
+    Symbol* s = malloc(sizeof(Symbol));
+    strncpy(s->name, name, sizeof(s->name)-1);
+    s->name[sizeof(s->name)-1] = '\0';
+    s->type           = type;
+    s->int_val        = 0;
+    s->char_val       = '\0';
+    s->is_initialized = true;
+    s->next           = table->head;
+    table->head       = s;
 }
 
-entry *createEntry(char *id, int i) {
-    entry *newEntry = malloc(sizeof(entry));
-    if (!newEntry) {
-        fprintf(stderr, "Memory allocation failed for table entry.\n");
+void set_symbol_int(SymbolTable* table, const char* name, int value) {
+    Symbol* s = lookup_symbol(table, name);
+    if (!s) {
+        fprintf(stderr, "Semantic Error: Variable '%s' not declared\n", name);
         exit(1);
     }
-    newEntry->id = strdup(id);
-    newEntry->type = i;
-    newEntry->isSet = false;
-    newEntry->value = 0;     // default
-    return newEntry;
-}
-
-
-bool insertEntry(table *t, char *id, int i) {
-    if(searchEntry(t,id))
-    return false;
-    entry *newEntry = createEntry(id, i);
-    t->entries[t->numEntries] = newEntry;
-    t->numEntries++;
-    return true;
-}
-
-bool searchEntry(table *t, char *id) {
-    
-    for(int i=0; i<t->numEntries; i++)
-    {
-        if (strcmp(t->entries[i]->id, id) == 0)
-            return true; 
+    if (s->type != TYPE_INT) {
+        fprintf(stderr, "Type Error: Variable '%s' is not int\n", name);
+        exit(1);
     }
-    return false;
+    s->int_val        = value;
+    s->is_initialized = true;
 }
 
-int getEntryType(table *t, char *id) {
-    for(int i=0; i<t->numEntries; i++)
-    {
-        if (strcmp(t->entries[i]->id, id) == 0)
-            return t->entries[i]->type; 
+void set_symbol_char(SymbolTable* table, const char* name, char value) {
+    Symbol* s = lookup_symbol(table, name);
+    if (!s) {
+        fprintf(stderr, "Semantic Error: Variable '%s' not declared\n", name);
+        exit(1);
     }
-    return -1;
+    if (s->type != TYPE_CHAR) {
+        fprintf(stderr, "Type Error: Variable '%s' is not char\n", name);
+        exit(1);
+    }
+    s->char_val       = value;
+    s->is_initialized = true;
 }
 
-void checkEntry(table *t, char *id)
-{
-    if(getEntryType(t, id)==-1)
-    printf("Variable - %s is not declared \n",id);
-}
-void setEntry(table *t, char *id)
-{
-    bool success =false;
-    for(int i=0; i<t->numEntries; i++)
-    {
-        if (strcmp(t->entries[i]->id, id) == 0)
-        {
-            success=true;
-            t->entries[i]->isSet=true;
-            return ;
-        }     
-    }
-    if(!success)
-    printf("Variable - %s is not declared \n",id);
-}
-bool checkisSet(table*t,char *id)
-{
-   for(int i=0; i<t->numEntries; i++)
-    {
-        if (strcmp(t->entries[i]->id, id) == 0)
-        {
-            return t->entries[i]->isSet ;
-        }     
-    }
-    return false; 
-}
-void checkSet(table *t, char *id)
-{
-    if(getEntryType(t,id)==-1)
-    printf("Variable - %s is not declared \n",id);
-    else
-    {
-        if(!checkisSet(t,id))
-        printf("Use of variable- %s without initializing \n",id);
-    }
-
-}
-
-void setEntryValue(table *t, char *id, int val, int op) {
-    for (int i = 0; i < t->numEntries; i++) {
-        entry *e = t->entries[i];
-        if (strcmp(e->id, id) == 0) {
-            e->isSet = true;
-            switch (op) {
-                case ASSIGN_EQUALS:
-                    e->value = val;
-                    break;
-                case PLUS_EQUALS:
-                    e->value += val;
-                    break;
-                case MINUS_EQUALS:
-                    e->value -= val;
-                    break;
-                case MULT_EQUALS:
-                    e->value *= val;
-                    break;
-                case DIV_EQUALS:
-                    if (val == 0)
-                        fprintf(stderr, "Error: divide by zero in '%s'\n", id);
-                    else
-                        e->value /= val;
-                    break;
-                case MODULO_EQUALS:
-                    if (val == 0)
-                        fprintf(stderr, "Error: modulo by zero in '%s'\n", id);
-                    else
-                        e->value %= val;
-                    break;
-                default:
-                    /* Fallback to simple assignment */
-                    e->value = val;
-            }
-            return;
+void print_symbol_table(SymbolTable* table) {
+    printf("----- Symbol Table -----\n");
+    printf("Name\tType\tValue\n");
+    for (Symbol* s = table->head; s; s = s->next) {
+        printf("%s\t", s->name);
+        if (s->type == TYPE_INT) {
+            printf("int\t");
+            if (s->is_initialized) printf("%d", s->int_val);
+            else                    printf("uninit");
+        } else {
+            printf("char\t");
+            if (s->is_initialized) printf("'%c'", s->char_val);
+            else                    printf("uninit");
         }
+        printf("\n");
     }
-    printf("Variable - %s is not declared\n", id);
 }
-
-int getEntryValue(table *t, char *id) {
-    for(int i = 0; i < t->numEntries; i++) {
-        if (strcmp(t->entries[i]->id, id) == 0)
-            return t->entries[i]->value;
-    }
-    return 0;  /* or error out */
-}
-
-    
-// int main() {
-//     table *symbolTable = createTable();
-//     insertEntry(symbolTable, "x", TY_INT);
-//     insertEntry(symbolTable, "y", TY_REAL);
-//     insertEntry(symbolTable, "flag", TY_BOOL);
-//     insertEntry(symbolTable, "ch", TY_CHAR);
-
-//     printf("x is of type %d\n", getEntryType(symbolTable, "x"));
-//     printf("y is of type %d\n", getEntryType(symbolTable, "y"));
-//     printf("flag is of type %d\n", getEntryType(symbolTable, "flag"));
-//     printf("ch is of type %d\n", getEntryType(symbolTable, "ch"));
-
-//     return 0;
-// }
