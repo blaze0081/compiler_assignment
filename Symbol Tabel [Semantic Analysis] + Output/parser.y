@@ -2,19 +2,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "symbol.h"
 extern FILE* yyin;
 extern int yylineno;
 extern int yylex(void);
 extern int yydebug;
 void yyerror(const char *s);
+
+table *symboltable; 
+
+/* ————————————————————————————————
+   execution‐control stack for if/else
+   ———————————————————————————————— */
+static bool execFlag[100];
+static int  execTop   = -1;
+static bool lastIfCond;         /* remember the just‐tested condition */
+
+static bool curExec() { 
+  /* if nothing on stack, default to “true” */
+  return execTop < 0 || execFlag[execTop]; 
+}
+static void pushExec(bool v) {
+  execFlag[++execTop] = v;
+}
+static void popExec() {
+  if (execTop >= 0) execTop--;
+}
+
 %}
 
 %union {
-    struct {
-        int type;
-        int ival;
-        char str[100];
-    }data;
+    int    type;      
+    int    ival;      
+    int    value; 
+    char   str[100];  
+    int    op;
 }
 
 /*tokens defined*/
@@ -29,19 +51,19 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %token INC DEC
 %token PRINT SCAN
 
-%token ASSIGN_EQUALS          /* := */
-%token PLUS_EQUALS            /* += */
-%token MINUS_EQUALS           /* -= */
-%token MULT_EQUALS            /* *= */
-%token DIV_EQUALS             /* /= */
-%token MODULO_EQUALS          /* %= */
+%token <op> ASSIGN_EQUALS          /* := */
+%token <op> PLUS_EQUALS            /* += */
+%token <op> MINUS_EQUALS           /* -= */
+%token <op> MULT_EQUALS            /* *= */
+%token <op> DIV_EQUALS             /* /= */
+%token <op> MODULO_EQUALS          /* %= */
 
-%token LESS_EQUALS            /* <= */
-%token GREATER_EQUALS         /* >= */
-%token NOT_EQUALS             /* <> */
-%token LESS                   /* < */
-%token GREATER                /* > */
-%token EQUALS                 /* := */
+%token <op> LESS_EQUALS      /* <= */
+%token <op> GREATER_EQUALS   /* >= */
+%token <op> NOT_EQUALS       /* <> */
+%token <op> LESS             /* <  */
+%token <op> GREATER          /* >  */
+%token <op> EQUALS           /* =  */
 
 %token PLUS                   /* + */
 %token MINUS                  /* - */
@@ -58,19 +80,23 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 %token COMMA                  /* , */
 %token COLON                  /* : */
 
-%token DIGIT
-%token INTEGER_CONSTANT
-%token CHAR_CONSTANT
-%token IO_STRING_CONSTANT
-%token IDENTIFIER
+%token <ival> DIGIT
+%token <ival> INTEGER_CONSTANT
+%token <str> CHAR_CONSTANT
+%token <str> IO_STRING_CONSTANT
+%token <str> IDENTIFIER
 
 /*FILL IN THESE LATER*/
-%type variable_declaration statement_list declaration_list declaration variable_name type
+%type variable_declaration statement_list declaration_list declaration 
 %type assignment_statement input_output_statement if_statement while_statement for_statement block_statement
-%type variable assignment_operators expression print_arguments scan_arguments 
+%type print_arguments scan_arguments 
 %type print_formatted_text print_expression_list scan_formatted_text scan_variable_list
-%type optional_else condition relop inc_dec scan_variable
-%type factor arithmatic_operator print_expression_item
+%type optional_else inc_dec scan_variable
+%type print_expression_item
+
+%type  <op>  arithmetic_operator assignment_operators relop
+%type <type> type 
+%type <ival> expression factor variable condition
 
 %left PLUS MINUS MULT DIV MODULO
 %left LESS_EQUALS LESS GREATER GREATER_EQUALS 
@@ -86,9 +112,17 @@ TOKENS NOT USED: MAIN, CURLY PARAN BACKSLASH, QUOTE, AT, THEN
 program:
     T_BEGIN PROGRAM COLON variable_declaration statement_list END PROGRAM
     {
-        printf("Valid Program\n");
-        YYACCEPT;
+    printf("Program executed successfully.\n\nSymbol Table:\n");
+    for(int i=0; i<symboltable->numEntries; i++){
+      entry *e = symboltable->entries[i];
+      printf("  %-10s : %-7s  init=%-3s  value=%d\n",
+          e->id,
+          (e->type==TY_INT ? "int" : e->type==TY_CHAR ? "char" : "??"),
+          (e->isSet? "yes":"no"),
+          e->value);
     }
+    YYACCEPT;
+  }
 ;
 
 variable_declaration:
@@ -102,19 +136,22 @@ declaration_list:
 ;
 
 declaration:
-    LEFT_ROUND_PARAN variable_name COMMA type RIGHT_ROUND_PARAN SEMI_COLON
-    | LEFT_ROUND_PARAN variable_name LEFT_SQ_PARAN DIGIT RIGHT_SQ_PARAN COMMA type RIGHT_ROUND_PARAN SEMI_COLON
+    LEFT_ROUND_PARAN IDENTIFIER COMMA type RIGHT_ROUND_PARAN SEMI_COLON
+    {
+        /* insert into symbol table, error on duplicate */
+        if (!insertEntry(symboltable, $2, $4))
+            printf("Error: Multiple declaration of variable '%s'\n", $2);
+    }
+    | LEFT_ROUND_PARAN IDENTIFIER LEFT_SQ_PARAN DIGIT RIGHT_SQ_PARAN COMMA type RIGHT_ROUND_PARAN SEMI_COLON
+    /*ADD ARRAY SUPPORT*/
 ;
 
 
 type:
-    INT
-    | CHAR
+      INT  { $$ = TY_INT; }
+    | CHAR { $$ = TY_CHAR; }
 ;
 
-variable_name:
-    IDENTIFIER
-;
 
 statement_list:
     /*empty*/
@@ -132,16 +169,27 @@ statement:
 ;
 
 assignment_statement:
-    variable assignment_operators expression
+    IDENTIFIER assignment_operators expression
+    {
+        if (curExec()) {
+            if (!searchEntry(symboltable, $1)) {
+                printf("Error: Undeclared variable '%s'\n", $1);
+            } else {
+                setEntry(symboltable, $1);
+                setEntryValue(symboltable, $1, $3, $2);
+                int destT = getEntryType(symboltable, $1);
+            }
+        }
+    }
 ;
 
 assignment_operators:
-    ASSIGN_EQUALS 
-    | PLUS_EQUALS 
-    | MINUS_EQUALS 
-    | MULT_EQUALS 
-    | DIV_EQUALS 
-    | MODULO_EQUALS
+    ASSIGN_EQUALS     { $$ = ASSIGN_EQUALS; }
+  | PLUS_EQUALS       { $$ = PLUS_EQUALS;   }
+  | MINUS_EQUALS      { $$ = MINUS_EQUALS;  }
+  | MULT_EQUALS       { $$ = MULT_EQUALS;   }
+  | DIV_EQUALS        { $$ = DIV_EQUALS;    }
+  | MODULO_EQUALS     { $$ = MODULO_EQUALS; }
 ;
 
 block_statement:
@@ -195,28 +243,62 @@ scan_variable:
 
 
 if_statement:
-    IF condition block_statement optional_else
-    | IF LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN block_statement optional_else
-;
+    IF condition
+      {
+        lastIfCond = curExec() && $2;   /* here the condition is $2 */
+        pushExec(lastIfCond);
+      }
+    block_statement
+      { popExec(); }
+    optional_else
+    | IF LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN
+     {
+       lastIfCond = curExec() && $3;   /* use $3 for the condition */
+       pushExec(lastIfCond);
+     }
+    block_statement
+      { popExec(); }
+    optional_else
+  ;
 
 optional_else:
-    /*empty*/
-    | ELSE block_statement
-;
+    /* no else: do nothing */
+  | ELSE
+      { 
+        /* now should we run the ELSE‐block? */
+        pushExec(curExec() && !lastIfCond);
+      }
+    block_statement
+      { popExec(); }
+  ;
 
 condition:
     variable relop expression
-    | variable
-;
+    {
+      switch ($2) {
+        case EQUALS:        $$ = ($1 == $3); break;
+        case NOT_EQUALS:    $$ = ($1 != $3); break;
+        case LESS:          $$ = ($1 <  $3); break;
+        case GREATER:       $$ = ($1 >  $3); break;
+        case LESS_EQUALS:   $$ = ($1 <= $3); break;
+        case GREATER_EQUALS:$$ = ($1 >= $3); break;
+      }
+    }
+  | variable
+    {
+      /* non-zero var → true */
+      $$ = ($1 != 0);
+    }
+  ;
 
 relop:
-    EQUALS
-    | NOT_EQUALS
-    | GREATER
-    | LESS
-    | GREATER_EQUALS
-    | LESS_EQUALS
-;
+    LESS_EQUALS    { $$ = LESS_EQUALS; }
+  | GREATER_EQUALS { $$ = GREATER_EQUALS; }
+  | NOT_EQUALS     { $$ = NOT_EQUALS; }
+  | LESS           { $$ = LESS; }
+  | GREATER        { $$ = GREATER; }
+  | EQUALS         { $$ = EQUALS; }
+  ;
 
 while_statement:
     WHILE LEFT_ROUND_PARAN condition RIGHT_ROUND_PARAN DO block_statement
@@ -224,7 +306,7 @@ while_statement:
 
 for_statement:
     FOR variable ASSIGN_EQUALS expression TO expression inc_dec expression DO block_statement
-    | FOR variable ASSIGN_EQUALS expression TO variable arithmatic_operator expression inc_dec expression DO block_statement
+    | FOR variable ASSIGN_EQUALS expression TO variable arithmetic_operator expression inc_dec expression DO block_statement
 ;
 
 inc_dec: 
@@ -234,28 +316,57 @@ inc_dec:
 
 expression:
     factor
-    | factor arithmatic_operator factor
+    | factor arithmetic_operator factor
+    {
+        switch ($2) {
+          case '+': $$ = $1 + $3; break;
+          case '-': $$ = $1 - $3; break;
+          case '*': $$ = $1 * $3; break;
+          case '/':
+            if ($3 == 0) yyerror("divide by zero");
+            else         $$ = $1 / $3;
+            break;
+          case '%':
+            if ($3 == 0) yyerror("modulo by zero");
+            else         $$ = $1 % $3;
+            break;
+        }
+      }
 ;
 
-arithmatic_operator:
-    PLUS
-    | MINUS
-    | MULT
-    | DIV
-    | MODULO
-;
+arithmetic_operator
+  : PLUS   { $$ = '+'; }
+  | MINUS  { $$ = '-'; }
+  | MULT   { $$ = '*'; }
+  | DIV { $$ = '/'; }
+  | MODULO { $$ = '%'; }
+  ;
 
 factor:
     variable
     | INTEGER_CONSTANT
+    {
+      /* yylval.ival was set by your lexer, so just pass it through */
+      $$ = $1;
+    }
     | CHAR_CONSTANT
     | LEFT_ROUND_PARAN expression RIGHT_ROUND_PARAN
 ;
 
 
 variable:
-    variable_name
-    | variable_name LEFT_SQ_PARAN expression RIGHT_SQ_PARAN
+    IDENTIFIER
+    {
+      if (!searchEntry(symboltable,$1)) {
+        printf("Error: Undeclared '%s'\n",$1);
+        $$ = 0;
+      } else {
+        checkSet(symboltable,$1);
+        /* look up the stored value: */
+        $$ = getEntryValue(symboltable,$1);
+      }
+    }
+    | IDENTIFIER LEFT_SQ_PARAN expression RIGHT_SQ_PARAN
 ;
 
 %%
@@ -263,6 +374,7 @@ variable:
 int main(int argc, char *argv[]) {
     /*CHECK FOR DEBUGGING REMOVE LATER*/
     /* yydebug = 1; */
+    symboltable = createTable();
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <input file>\n", argv[0]);

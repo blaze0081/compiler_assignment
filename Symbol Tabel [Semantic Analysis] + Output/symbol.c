@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
+#include "parser.tab.h"
 
 
 // typedef enum {
@@ -46,6 +47,7 @@ entry *createEntry(char *id, int i) {
     newEntry->id = strdup(id);
     newEntry->type = i;
     newEntry->isSet = false;
+    newEntry->value = 0;     // default
     return newEntry;
 }
 
@@ -120,6 +122,56 @@ void checkSet(table *t, char *id)
     }
 
 }
+
+void setEntryValue(table *t, char *id, int val, int op) {
+    for (int i = 0; i < t->numEntries; i++) {
+        entry *e = t->entries[i];
+        if (strcmp(e->id, id) == 0) {
+            e->isSet = true;
+            switch (op) {
+                case ASSIGN_EQUALS:
+                    e->value = val;
+                    break;
+                case PLUS_EQUALS:
+                    e->value += val;
+                    break;
+                case MINUS_EQUALS:
+                    e->value -= val;
+                    break;
+                case MULT_EQUALS:
+                    e->value *= val;
+                    break;
+                case DIV_EQUALS:
+                    if (val == 0)
+                        fprintf(stderr, "Error: divide by zero in '%s'\n", id);
+                    else
+                        e->value /= val;
+                    break;
+                case MODULO_EQUALS:
+                    if (val == 0)
+                        fprintf(stderr, "Error: modulo by zero in '%s'\n", id);
+                    else
+                        e->value %= val;
+                    break;
+                default:
+                    /* Fallback to simple assignment */
+                    e->value = val;
+            }
+            return;
+        }
+    }
+    printf("Variable - %s is not declared\n", id);
+}
+
+int getEntryValue(table *t, char *id) {
+    for(int i = 0; i < t->numEntries; i++) {
+        if (strcmp(t->entries[i]->id, id) == 0)
+            return t->entries[i]->value;
+    }
+    return 0;  /* or error out */
+}
+
+    
 // int main() {
 //     table *symbolTable = createTable();
 //     insertEntry(symbolTable, "x", TY_INT);

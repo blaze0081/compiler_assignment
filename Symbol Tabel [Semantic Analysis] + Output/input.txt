@@ -1,8 +1,15 @@
 begin program:
 begin VarDecl:
-(sum, int);
-(number, int);
+(x, int);
 end VarDecl
-sum := (1, 2);
+x := (2, 10);
+if (x < (0, 10))
+begin
+x := (4, 10);
+end
+else
+begin
+x += (3, 10);
+end;
 
 end program
