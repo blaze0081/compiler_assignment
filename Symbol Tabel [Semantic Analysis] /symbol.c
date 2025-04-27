@@ -87,3 +87,4 @@ void print_symbol_table(SymbolTable* table) {
         printf("\n");
     }
 }
+
