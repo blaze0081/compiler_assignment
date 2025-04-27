@@ -1,14 +1,12 @@
 begin program:
 begin VarDecl:
-(a, int);
-(b, int);
-(c, char);
+(x[6], char);
+(x, int);
 end VarDecl
-
-b := (20, 10);
-for a := (10, 8) to b + (10, 2) inc (1, 10) do
+x := (0, 10);
+if (x > (0, 10))
 begin
-    a := a + (1, 2);
+x := (2, 10);
 end;
-
+// compound block is missing
 end program

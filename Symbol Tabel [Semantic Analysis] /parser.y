@@ -644,7 +644,6 @@ void execute_statement(Node* stmt, SymbolTable* table) {
         Node* block = stmt->children[1];
         while (eval_condition(cond, table)) {
             Symbol* s = lookup_symbol(table, "number");
-            printf("[DEBUG] number = %d\n", s->int_val);
             execute_statement(block, table);
         }
         return;
@@ -654,19 +653,16 @@ void execute_statement(Node* stmt, SymbolTable* table) {
         execute_statements(stmt->children[0], table);
         return;
     }
-    else if (strcmp(op, "Print")==0) {
-        /* print(string, exprs...) */
+    
+    /* else if (strcmp(op, "Print")==0) {
         Node* first = stmt->children[0];
-        /* literal is first->children[0]->name, includes quotes */
         const char* lit = first->children[0]->name;
-        /* strip surrounding quotes */
         int len = strlen(lit);
         if (len >= 2 && lit[0]=='\"' && lit[len-1]=='\"') {
             fwrite(lit+1, 1, len-2, stdout);
         } else {
             printf("%s", lit);
         }
-        /* any additional args? */
         if (stmt->n > 1) {
             Node* list = stmt->children[1];
             for (int i = 0; i < list->n; i++) {
@@ -676,7 +672,8 @@ void execute_statement(Node* stmt, SymbolTable* table) {
         }
         printf("\n");
         return;
-    }
+    } */
+    
     else if (strcmp(op, "FOR") == 0) {
         /* child[0]=var, [1]=start, [2]=expr_check, [3]=block */
         const char* varname = stmt->children[0]->children[0]->name;
@@ -788,7 +785,7 @@ int eval_condition(Node* cond, SymbolTable* table) {
 }
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Syntax Error at line %d: %s\n", yylineno, s);
+    fprintf(stderr, "Syntax Error\n");
 }
 
 /* post-order free of all AST nodes */
